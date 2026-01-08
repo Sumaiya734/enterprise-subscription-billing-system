@@ -1,0 +1,23 @@
+# WAMP Virtual Host Configuration for Laravel
+# Add this to your Apache httpd-vhosts.conf file (usually in C:\wamp64\bin\apache\apache2.x.x\conf\extra\httpd-vhosts.conf)
+
+<VirtualHost *:80>
+    ServerName billing.local
+    DocumentRoot "C:/wamp64/www/corporate-billing-system/public"
+    
+    <Directory "C:/wamp64/www/corporate-billing-system/public">
+        AllowOverride All
+        Require all granted
+        DirectoryIndex index.php
+    </Directory>
+    
+    ErrorLog "logs/billing_error.log"
+    CustomLog "logs/billing_access.log" common
+</VirtualHost>
+
+# Also add this line to your Windows hosts file (C:\Windows\System32\drivers\etc\hosts):
+# 127.0.0.1    billing.local
+
+# After adding this configuration:
+# 1. Restart WAMP services
+# 2. Access your site at: http://billing.local/admin/customer-messages
