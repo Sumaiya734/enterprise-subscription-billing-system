@@ -20,16 +20,19 @@ class CustomerProductsController extends Controller
         // Get authenticated customer
         $customer = Customer::where('user_id', Auth::id())->firstOrFail();
         
-        // Get all customer products with product details
         $customerProducts = CustomerProduct::where('c_id', $customer->c_id)
-            ->with(['product' => function($query) {
-                $query->select('p_id', 'name', 'description', 'monthly_price');
-            }])
+            ->with([
+                'product' => function($query) {
+                    $query->select('p_id', 'name', 'description', 'monthly_price');
+                },
+                'invoices' => function($query) {
+                    $query->orderBy('issue_date', 'desc');
+                }
+            ])
             ->where('is_active', 1)
             ->orderBy('created_at', 'desc')
             ->paginate(10);
         
-        // Calculate stats
         $activeCount = CustomerProduct::where('c_id', $customer->c_id)
             ->where('is_active', 1)
             ->where('status', 'active')
@@ -40,7 +43,7 @@ class CustomerProductsController extends Controller
             ->with('product')
             ->get()
             ->sum(function($cp) {
-                return $cp->product->monthly_price ?? 0;
+                return $cp->total_amount;
             });
         
         return view('customer.products.index', compact('customer', 'customerProducts', 'activeCount', 'totalMonthly'));
@@ -134,21 +137,30 @@ class CustomerProductsController extends Controller
 
             DB::beginTransaction();
             
-            // Calculate subscription details
             $monthlyPrice = $product->monthly_price;
             $billingCycle = (int) $request->billing_cycle;
-            $subscriptionAmount = $monthlyPrice * $billingCycle;
+            $discountRates = [
+                1 => 0,
+                3 => 5,
+                6 => 10,
+                12 => 15,
+            ];
+            $baseAmount = $monthlyPrice * $billingCycle;
+            $discountRate = $discountRates[$billingCycle] ?? 0;
+            $discountAmount = $baseAmount * ($discountRate / 100);
+            $subscriptionAmount = round($baseAmount - $discountAmount, 2);
+            $assignDate = Carbon::now()->toDateString();
+            $dueDate = Carbon::parse($assignDate)->addMonths($billingCycle)->toDateString();
             
-            // Create customer product subscription
             $customerProduct = CustomerProduct::create([
                 'c_id' => $customer->c_id,
                 'p_id' => $request->product_id,
-                'assign_date' => Carbon::now()->toDateString(),
+                'assign_date' => $assignDate,
                 'billing_cycle_months' => $billingCycle,
-                'status' => 'pending', // Pending until payment confirmed
-                'is_active' => false, // Will be activated after payment
-                'custom_price' => $subscriptionAmount,
-                'is_custom_price' => false
+                'due_date' => $dueDate,
+                
+                'status' => 'pending',
+                'is_active' => false
             ]);
 
             // Generate unique invoice number

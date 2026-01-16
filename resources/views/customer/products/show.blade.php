@@ -57,10 +57,16 @@
                                 </div>
 
                                 <div class="product-info-item mb-4">
-                                    <label class="form-label text-muted small fw-bold">Monthly Price</label>
+                                    @php
+                                        $latestInvoice = $customerProduct->invoices->first();
+                                    @endphp
+                                    <label class="form-label text-muted small fw-bold">Subtotal Amount</label>
                                     <h4 class="fw-bold text-success mb-0">
-                                        ৳{{ number_format($customerProduct->product->monthly_price ?? 0, 2) }}
-                                        <small class="text-muted fs-6">per month</small>
+                                        @if($latestInvoice)
+                                            ৳{{ number_format($latestInvoice->subtotal ?? 0, 2) }}
+                                        @else
+                                            ৳{{ number_format($customerProduct->total_amount ?? 0, 2) }}
+                                        @endif
                                     </h4>
                                 </div>
                             </div>
@@ -164,10 +170,10 @@
                                                 </td>
                                                 <td class="text-end">
                                                     <div class="btn-group btn-group-sm">
-                                                        <a href="#" class="btn btn-outline-primary" title="View Invoice">
+                                                        <a href="{{ route('customer.invoices.show', $invoice->invoice_id) }}" class="btn btn-outline-primary" title="View Invoice">
                                                             <i class="fas fa-eye"></i>
                                                         </a>
-                                                        <a href="#" class="btn btn-outline-success" title="Download PDF">
+                                                        <a href="{{ route('customer.invoices.download', $invoice->invoice_id) }}" class="btn btn-outline-success" title="Download PDF">
                                                             <i class="fas fa-download"></i>
                                                         </a>
                                                     </div>

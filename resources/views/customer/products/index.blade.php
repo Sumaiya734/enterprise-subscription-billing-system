@@ -103,7 +103,8 @@
                                 <tr>
                                     <th class="border-0">Product</th>
                                     <th class="border-0">Description</th>
-                                    <th class="border-0">Monthly Price</th>
+                                    <th class="border-0">Subtotal Amount</th>
+                                    <th class="border-0">Due Date</th>
                                     <th class="border-0">Status</th>
                                     <th class="border-0">Start Date</th>
                                     <th class="border-0 text-end">Actions</th>
@@ -130,9 +131,23 @@
                                         </td>
                                         <td>
                                             <h6 class="mb-0 fw-bold text-primary">
-                                                ৳{{ number_format($cp->product->monthly_price ?? 0, 2) }}
+                                                ৳{{ number_format($cp->total_amount ?? 0, 2) }}
                                             </h6>
-                                            <small class="text-muted">per month</small>
+                                            <small class="text-muted">
+                                                {{ $cp->billing_cycle_text ?? 'Total' }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            @if($cp->due_date)
+                                                <small class="d-block fw-bold">
+                                                    {{ \Carbon\Carbon::parse($cp->due_date)->format('M d, Y') }}
+                                                </small>
+                                                <small class="text-muted">
+                                                    {{ \Carbon\Carbon::parse($cp->due_date)->diffForHumans() }}
+                                                </small>
+                                            @else
+                                                <small class="text-muted">No due date</small>
+                                            @endif
                                         </td>
                                         <td>
                                             @if($cp->is_active && $cp->status == 'active')
@@ -161,12 +176,25 @@
                                                    title="View Details">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                <a href="#" 
-                                                   class="btn btn-outline-success"
-                                                   data-bs-toggle="tooltip"
-                                                   title="View Invoices">
-                                                    <i class="fas fa-file-invoice"></i>
-                                                </a>
+                                                @php
+                                                    $latestInvoice = $cp->invoices->first();
+                                                @endphp
+                                                @if($latestInvoice)
+                                                    <a href="{{ route('customer.invoices.show', $latestInvoice->invoice_id) }}" 
+                                                       class="btn btn-outline-success"
+                                                       data-bs-toggle="tooltip"
+                                                       title="View Latest Invoice">
+                                                        <i class="fas fa-file-invoice"></i>
+                                                    </a>
+                                                @else
+                                                    <button type="button" 
+                                                            class="btn btn-outline-secondary"
+                                                            data-bs-toggle="tooltip"
+                                                            title="No invoices available"
+                                                            disabled>
+                                                        <i class="fas fa-file-invoice"></i>
+                                                    </button>
+                                                @endif
                                                 <button type="button" 
                                                         class="btn btn-outline-warning"
                                                         data-bs-toggle="modal"

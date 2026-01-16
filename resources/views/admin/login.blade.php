@@ -78,7 +78,7 @@
       flex: 1.2;
       height: 480px;
       border-radius: 22px;
-      background: url("{{ asset('assets/image2.jpg') }}") no-repeat center center/cover;
+      background: url("{{ asset('assets/image1.png') }}") no-repeat center center/cover;
       box-shadow: 0 15px 45px rgba(0,0,0,0.20);
       animation: fadeUp 0.9s ease;
     }
@@ -125,7 +125,7 @@
       .image-box {
         height: 300px;
         width: 100%;
-        background: url('{{ asset("assets/image1.jpg") }}') no-repeat center center/cover;
+        background: url('{{ asset("assets/image1.png") }}') no-repeat center center/cover;
       }
     }
   </style>

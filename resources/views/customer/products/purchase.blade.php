@@ -78,6 +78,13 @@
                                     <h6 class="mb-3">
                                         <i class="fas fa-calendar-alt me-2"></i>Choose Your Billing Cycle
                                     </h6>
+                                    @php
+                                        $discountRates = [
+                                            3 => 0.95,
+                                            6 => 0.90,
+                                            12 => 0.85,
+                                        ];
+                                    @endphp
                                     <div class="row g-3">
                                         <div class="col-md-6 col-lg-3">
                                             <div class="billing-option">
@@ -98,7 +105,7 @@
                                                     <div class="text-center">
                                                         <strong>Quarterly</strong>
                                                         <div class="small text-muted">3 Months</div>
-                                                        <div class="fw-bold text-primary">৳{{ number_format($product->monthly_price * 3, 0) }}</div>
+                                                        <div class="fw-bold text-primary">৳{{ number_format($product->monthly_price * 3 * $discountRates[3], 0) }}</div>
                                                         <div class="badge bg-success small">Save 5%</div>
                                                     </div>
                                                 </label>
@@ -111,7 +118,7 @@
                                                     <div class="text-center">
                                                         <strong>Half-Yearly</strong>
                                                         <div class="small text-muted">6 Months</div>
-                                                        <div class="fw-bold text-primary">৳{{ number_format($product->monthly_price * 6, 0) }}</div>
+                                                        <div class="fw-bold text-primary">৳{{ number_format($product->monthly_price * 6 * $discountRates[6], 0) }}</div>
                                                         <div class="badge bg-success small">Save 10%</div>
                                                     </div>
                                                 </label>
@@ -124,7 +131,7 @@
                                                     <div class="text-center">
                                                         <strong>Yearly</strong>
                                                         <div class="small text-muted">12 Months</div>
-                                                        <div class="fw-bold text-primary">৳{{ number_format($product->monthly_price * 12, 0) }}</div>
+                                                        <div class="fw-bold text-primary">৳{{ number_format($product->monthly_price * 12 * $discountRates[12], 0) }}</div>
                                                         <div class="badge bg-success small">Save 15%</div>
                                                     </div>
                                                 </label>
@@ -504,7 +511,14 @@
                 if (selectedCycle) {
                     const cycle = parseInt(selectedCycle.value);
                     const totalAmount = monthlyPrice * cycle;
-                    const discount = cycle > 1 ? Math.round(totalAmount * 0.05) : 0; // 5% discount for longer cycles
+                    const discountRates = {
+                        1: 0,
+                        3: 5,
+                        6: 10,
+                        12: 15
+                    };
+                    const rate = discountRates[cycle] || 0;
+                    const discount = rate > 0 ? Math.round(totalAmount * rate / 100) : 0;
                     const finalAmount = totalAmount - discount;
 
                     summaryTotal.textContent = '৳' + finalAmount.toLocaleString('en-BD');

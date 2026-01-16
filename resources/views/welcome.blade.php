@@ -98,9 +98,10 @@
     .hero-right .hero-image{
       width:100%;
       height:420px;
-      background-image: url('{{ asset("assets/image1.jpg") }}');
-      background-size: cover;
+      background-image: url('{{ asset("assets/nanosoft logo.png") }}');
+      background-size: contain;
       background-position: center center;
+      background-repeat: no-repeat;
       position:relative;
     }
 
@@ -411,7 +412,7 @@ footer{
 
   <div class="hero-full-bg d-none">
     <div class="hero-inner text-center">
-      <img src="{{ asset('assets/nanosoft logo.png') }}" alt="logo" style="height:64px; width:64px; margin-bottom:1rem;">
+      <img src="{{ asset('assets/nanosoft logo.png') }}" alt="logo" style="height:50px; width:50px; margin-bottom:1rem;">
       <h2 class="fw-bold" style="font-size:1.5rem; margin-bottom:.25rem;">Nanosoft Billing</h2>
       <p class="mb-3 text-white-50">Automated billing & customer portal</p>
       <div>
@@ -1263,7 +1264,7 @@ footer{
     </div>
 
     <div class="col-lg-6">
-      <img src="{{ asset('assets/nanosoft logo.png') }}" alt="about" class="img-fluid rounded" style="box-shadow: 0 18px 40px rgba(12,15,29,0.06); max-width:360px;">
+      <img src="{{ asset('assets/nanosoft logo.png') }}" alt="about" class="img-fluid rounded d-block mx-auto" style="box-shadow: 0 18px 40px rgba(12,15,29,0.06); max-width:360px;">
     </div>
   </div>
 </section>
@@ -1484,4 +1485,5 @@ footer{
   });
 </script>
 </body>
+</html>
 </html>
