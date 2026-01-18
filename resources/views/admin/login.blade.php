@@ -141,7 +141,7 @@
     <div class="logo">
       <img src="{{ asset('assets/nanosoft logo.png') }}" alt="Nanosoft Logo">
     </div>
-    <h2 class="fw-bold text-primary">Nanosoft Billing</h2>
+    <h2 class="fw-bold text-primary">Billing</h2>
   </div>
 
   <!-- Login Wrapper -->

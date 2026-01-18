@@ -346,7 +346,7 @@
     <div class="logo">
       <img src="{{ asset('assets/nanosoft logo.png') }}" alt="Nanosoft Logo">
     </div>
-    <h2 class="logo-title">Nanosoft Billing</h2>
+    <h2 class="logo-title">Billing</h2>
   </div>
 
   <!-- Compact Wrapper -->

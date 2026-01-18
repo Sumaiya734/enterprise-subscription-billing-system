@@ -28,12 +28,18 @@ use App\Http\Controllers\Customer\ContactController;
 use App\Http\Controllers\Admin\SupportController as AdminSupportController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Customer\CustomerNotificationController;
+use App\Http\Controllers\PublicContactController;
 
 // ==================== PUBLIC ROUTES ====================
 
 // Welcome/Home routes
 Route::get('/', [WelcomeController::class, 'index'])->name('welcome');
 Route::get('/home', [WelcomeController::class, 'index'])->name('home');
+
+// Public contact form
+Route::post('/contact', [PublicContactController::class, 'submit'])->name('public.contact.submit');
+
+
 
 // General login redirect
 Route::get('/login', function () {
@@ -45,7 +51,6 @@ Route::middleware('web')->group(function () {
     // Customer Authentication
     Route::get('/customer/login', [App\Http\Controllers\Customer\CustomersController::class, 'showLoginForm'])->name('customer.login');
     Route::post('/customer/login', [App\Http\Controllers\Customer\CustomersController::class, 'login'])->name('customer.login.submit');
-    Route::post('/customer/logout', [App\Http\Controllers\Customer\CustomersController::class, 'logout'])->name('customer.logout');
     Route::get('/customer/register', [App\Http\Controllers\Customer\CustomersController::class, 'showRegistrationForm'])->name('customer.register');
     Route::post('/customer/register', [App\Http\Controllers\Customer\CustomersController::class, 'register'])->name('customer.register.submit');
     
@@ -259,6 +264,9 @@ Route::prefix('customer')->name('customer.')->middleware(['auth', 'customer'])->
     Route::get('/profile', [App\Http\Controllers\Customer\CustomersController::class, 'profile'])->name('profile.index');
     Route::put('/profile/update', [App\Http\Controllers\Customer\CustomersController::class, 'updateProfile'])->name('profile.update');
     Route::post('/profile/change-password', [App\Http\Controllers\Customer\CustomersController::class, 'changePassword'])->name('profile.change-password');
+    
+    // ADD LOGOUT ROUTE HERE - inside the authenticated group
+    Route::post('/logout', [App\Http\Controllers\Customer\CustomersController::class, 'logout'])->name('logout');
     
     // Customer Products
     // Product browsing and purchasing (must be before resource routes)

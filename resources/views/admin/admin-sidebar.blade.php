@@ -66,7 +66,7 @@
         <!-- Customer Products -->
         <div class="nav-item">
             <a class="nav-link {{ request()->routeIs('admin.customer-to-products.index') ? 'active' : '' }}" href="{{ route('admin.customer-to-products.index') }}">
-                <i class="fas fa-box me-2"></i>Customer to Products
+                <i class="fas fa-box me-2"></i>Manage Subscription
             </a>
         </div>
 

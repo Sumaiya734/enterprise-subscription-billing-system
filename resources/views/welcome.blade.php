@@ -1278,6 +1278,42 @@ footer{
           <h5 style="font-weight:700">Contact Sales</h5>
           <p class="text-muted">Have questions? We'll respond within one business day.</p>
 
+          <!-- Display success or error messages -->
+          @if(session('success'))
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+          @endif
+
+          @if($errors->any())
+          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <ul class="mb-0">
+              @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+              @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+          @endif
+
+          <!-- JavaScript to scroll to success message if it exists -->
+          @if(session('success'))
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              const successAlert = document.querySelector('.alert.alert-success');
+              if (successAlert) {
+                successAlert.scrollIntoView({ 
+                  behavior: 'smooth', 
+                  block: 'center' 
+                });
+              }
+            });
+          </script>
+          @endif
+
           <div class="row g-3 mb-3">
             <div class="col-md-4 text-center">
               <i class="fas fa-map-marker-alt fa-2x text-primary mb-2"></i>
@@ -1298,7 +1334,7 @@ footer{
             </div>
           </div>
 
-          <form action="#" method="POST">
+          <form action="{{ route('public.contact.submit') }}" method="POST">
             @csrf
             <div class="row g-3">
               <div class="col-md-6">
@@ -1407,7 +1443,7 @@ footer{
 
           <div class="modal-footer">
             <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-            <a href="#contact" class="btn btn-cta">Contact Sales</a>
+            <a href="#contact" class="btn btn-cta" onclick="bootstrap.Modal.getInstance(this.closest('.modal')).hide(); setTimeout(() => { document.getElementById('contact').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100); return false;">Contact Sales</a>
           </div>
         </div>
       </div>
