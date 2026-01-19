@@ -159,6 +159,7 @@
                             <th>Billing Months</th>
                             <th>Subtotal Amount</th>
                             <th>Due Date</th>
+                            <th>Expire Date</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -200,6 +201,24 @@
                                     </div>
                                 </td>
                                 <td class="text-center">
+                                    <div class="expire-day">
+                                        @if($cp->expire_date)
+                                            {{ \Carbon\Carbon::parse($cp->expire_date)->format('M d, Y') }}
+                                            @if($cp->is_expired_grace_period)
+                                                <div class="text-danger small">
+                                                    <i class="fas fa-exclamation-triangle"></i> Expired
+                                                </div>
+                                            @elseif($cp->days_until_expire <= 3)
+                                                <div class="text-warning small">
+                                                    <i class="fas fa-clock"></i> {{ $cp->days_until_expire }} day{{ $cp->days_until_expire != 1 ? 's' : '' }} left
+                                                </div>
+                                            @endif
+                                        @else
+                                            <span class="text-muted">N/A</span>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td class="text-center">
                                     @php
                                         $statusClass = ['active' => 'bg-success', 'pending' => 'bg-warning', 'expired' => 'bg-danger'][$cp->status] ?? 'bg-secondary';
                                         $statusIcons = ['active' => 'fa-check-circle', 'pending' => 'fa-clock', 'expired' => 'fa-times-circle'];
@@ -237,7 +256,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-4">
+                                <td colspan="10" class="text-center py-4">
                                     <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
                                     <h5>No Products Found</h5>
                                     <p class="text-muted">This customer has no assigned products.</p>
@@ -260,6 +279,7 @@
                             <th>Billing Months</th>
                             <th>Subtotal Amount</th>
                             <th>Due Date</th>
+                            <th>Expire Date</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -322,6 +342,26 @@
                                                     {{ \Carbon\Carbon::parse($cp->due_date)->format('M d, Y') }}
                                                 @else
                                                     <span class="text-muted">No due date</span>
+                                                @endif
+                                            </div>
+                                        </td>
+
+                                        <!-- Expire Date - due_date + 7 days -->
+                                        <td class="text-center">
+                                            <div class="expire-day">
+                                                @if($cp->expire_date)
+                                                    {{ \Carbon\Carbon::parse($cp->expire_date)->format('M d, Y') }}
+                                                    @if($cp->is_expired_grace_period)
+                                                        <div class="text-danger small">
+                                                            <i class="fas fa-exclamation-triangle"></i> Expired
+                                                        </div>
+                                                    @elseif($cp->days_until_expire <= 3)
+                                                        <div class="text-warning small">
+                                                            <i class="fas fa-clock"></i> {{ $cp->days_until_expire }} day{{ $cp->days_until_expire != 1 ? 's' : '' }} left
+                                                        </div>
+                                                    @endif
+                                                @else
+                                                    <span class="text-muted">N/A</span>
                                                 @endif
                                             </div>
                                         </td>
@@ -621,6 +661,19 @@
     .due-day sup {
         font-size: 0.65rem;
         top: -0.3em;
+    }
+    .expire-day {
+        font-weight: 600;
+        color: #3498db;
+        font-size: 0.9rem;
+    }
+    .expire-day .text-danger {
+        color: #e74c3c !important;
+        font-weight: 600;
+    }
+    .expire-day .text-warning {
+        color: #f39c12 !important;
+        font-weight: 600;
     }
     .billing-months {
         font-weight: 500;

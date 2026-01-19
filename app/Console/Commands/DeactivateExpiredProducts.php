@@ -21,18 +21,15 @@ class DeactivateExpiredProducts extends Command
      *
      * @var string
      */
-    protected $description = 'Automatically deactivate products when their billing cycle ends';
+    protected $description = 'Automatically deactivate products 7 days after their due date';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $this->info('Checking for products that need to be deactivated...');
+        $this->info('Checking for products that need to be deactivated (7 days after due date)...');
 
-        // Find all active products that have reached the end of their billing cycle
-        $today = Carbon::today();
-        
         // Get all active customer products
         $customerProducts = CustomerProduct::where('status', 'active')
             ->where('is_active', 1)
@@ -41,26 +38,9 @@ class DeactivateExpiredProducts extends Command
         $deactivatedCount = 0;
 
         foreach ($customerProducts as $customerProduct) {
-            // Calculate when the next billing cycle would start
-            $assignDate = Carbon::parse($customerProduct->assign_date);
-            $billingCycleMonths = $customerProduct->billing_cycle_months ?? 1;
-            
-            // Calculate the number of months that have passed since assignment
-            $monthsSinceAssignment = $assignDate->diffInMonths($today);
-            
-            // Calculate the current billing cycle number (0-indexed)
-            $currentCycleNumber = floor($monthsSinceAssignment / $billingCycleMonths);
-            
-            // Calculate when the current billing cycle ends
-            $currentCycleEndDate = $assignDate->copy()->addMonths(($currentCycleNumber + 1) * $billingCycleMonths);
-            
-            // If today is past the end of the current billing cycle, the product should be deactivated
-            if ($today->greaterThanOrEqualTo($currentCycleEndDate)) {
-                $customerProduct->deactivate();
-                
-                $this->info("Deactivated product: {$customerProduct->product->name} for customer {$customerProduct->customer->name}");
-                Log::info("Product deactivated: Product ID {$customerProduct->cp_id}, Customer ID {$customerProduct->c_id}, Billing cycle ended on {$currentCycleEndDate->format('Y-m-d')}");
-                
+            // Use the new checkAndDeactivateIfExpired method
+            if ($customerProduct->checkAndDeactivateIfExpired()) {
+                $this->info("Deactivated product: {$customerProduct->product->name} for customer {$customerProduct->customer->name} (expired on {$customerProduct->expire_date})");
                 $deactivatedCount++;
             }
         }

@@ -84,6 +84,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         
         // Monthly bills
         Route::get('/monthly-bills/{month?}', [MonthlyBillController::class, 'monthlyBills'])->name('monthly-bills');
+        Route::post('/monthly-bills/{month?}', function() {
+            return redirect()->back()->with('error', 'Invalid request method. Please use the proper form.');
+        })->name('monthly-bills.post');
         Route::get('/monthly-details/{month}', [BillingController::class, 'monthlyDetails'])->name('monthly-details');
         
         // Bill generation and management
@@ -110,7 +113,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::post('/generate-monthly-bills', [MonthlyBillController::class, 'generateMonthlyBills'])->name('generate-monthly-bills');
         Route::post('/generate-monthly-bills-all', [MonthlyBillController::class, 'generateMonthlyBillsForAll'])->name('generate-monthly-bills-all');
         Route::post('/close-month', [BillingController::class, 'closeMonth'])->name('close-month');
-        Route::post('/confirm-user-payment', [BillingController::class, 'confirmUserPayment'])->name('confirm-user-payment');
+        Route::post('/confirm-user-payment', [MonthlyBillController::class, 'confirmUserPayment'])->name('confirm-user-payment');
         
         // Reports
         Route::get('/reports', [BillingReportController::class, 'index'])->name('reports');

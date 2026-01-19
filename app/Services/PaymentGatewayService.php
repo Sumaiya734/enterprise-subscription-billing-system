@@ -39,14 +39,21 @@ class PaymentGatewayService
     /**
      * Process bKash payment
      */
+    /**
+     * Process bKash payment
+     */
     private function processBkashPayment($paymentData)
     {
         try {
             // bKash API integration
             $bkashConfig = config('payment.bkash');
+
+            if (empty($bkashConfig['username']) || empty($bkashConfig['password']) || $bkashConfig['username'] === 'change_me') {
+                throw new Exception('bKash Configuration Missing. Please set BKASH_USERNAME and BKASH_PASSWORD in your .env file.');
+            }
             
             // Step 1: Get bKash token
-            $tokenResponse = Http::withHeaders([
+            $tokenResponse = Http::withoutVerifying()->withHeaders([
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
                 'username' => $bkashConfig['username'],
@@ -57,13 +64,18 @@ class PaymentGatewayService
             ]);
 
             if (!$tokenResponse->successful()) {
-                throw new Exception('Failed to get bKash token');
+                Log::error('bKash Token Error', [
+                    'status' => $tokenResponse->status(),
+                    'body' => $tokenResponse->json(),
+                    'headers' => $tokenResponse->headers()
+                ]);
+                throw new Exception('Failed to get bKash token: ' . ($tokenResponse->json('statusMessage') ?? 'Unknown error'));
             }
 
             $token = $tokenResponse->json()['id_token'];
 
             // Step 2: Create payment
-            $paymentResponse = Http::withHeaders([
+            $paymentResponse = Http::withoutVerifying()->withHeaders([
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
                 'authorization' => $token,
@@ -101,6 +113,71 @@ class PaymentGatewayService
             return [
                 'success' => false,
                 'error' => 'bKash payment failed: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Execute bKash payment (Final Step)
+     */
+    public function executeBkashPayment($paymentId)
+    {
+        try {
+            $bkashConfig = config('payment.bkash');
+            
+            // Step 1: Get Token
+            $tokenResponse = Http::withoutVerifying()->withHeaders([
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'username' => $bkashConfig['username'],
+                'password' => $bkashConfig['password']
+            ])->post($bkashConfig['base_url'] . '/tokenized/checkout/token/grant', [
+                'app_key' => $bkashConfig['app_key'],
+                'app_secret' => $bkashConfig['app_secret']
+            ]);
+
+            if (!$tokenResponse->successful()) {
+                throw new Exception('Failed to get bKash token for execution');
+            }
+
+            $token = $tokenResponse->json()['id_token'];
+
+            // Step 2: Execute Payment
+            $executeResponse = Http::withoutVerifying()->withHeaders([
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'authorization' => $token,
+                'x-app-key' => $bkashConfig['app_key']
+            ])->post($bkashConfig['base_url'] . '/tokenized/checkout/execute', [
+                'paymentID' => $paymentId
+            ]);
+
+            $result = $executeResponse->json();
+
+            // Check for API errors or transaction failure
+            if (!$executeResponse->successful() || (isset($result['statusCode']) && $result['statusCode'] !== '0000')) {
+                 $errorMessage = $result['statusMessage'] ?? 'Unknown error';
+                 throw new Exception('bKash Execution Failed: ' . $errorMessage);
+            }
+
+            return [
+                'success' => true,
+                'payment_id' => $result['paymentID'],
+                'transaction_id' => $result['trxID'],
+                'amount' => $result['amount'],
+                'status' => 'Completed',
+                'customer_msisdn' => $result['customerMsisdn'] ?? null
+            ];
+
+        } catch (Exception $e) {
+            Log::error('bKash execution failed', [
+                'payment_id' => $paymentId,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
             ];
         }
     }

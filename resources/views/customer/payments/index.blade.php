@@ -159,7 +159,6 @@
                                 <th class="border-0">Payment Date</th>
                                 <th class="border-0">Amount</th>
                                 <th class="border-0">Method</th>
-                                <th class="border-0">Transaction ID</th>
                                 <th class="border-0">Status</th>
                                 <th class="border-0 text-end">Actions</th>
                             </tr>
@@ -173,9 +172,18 @@
                                     </td>
                                     <td>
                                         <div class="fw-bold">{{ $payment->invoice->invoice_number ?? 'N/A' }}</div>
-                                        <small class="text-muted">
-                                            {{ $payment->invoice->customerProduct->product->name ?? 'Product' }}
-                                        </small>
+                                        <div class="small text-muted d-flex align-items-center">
+                                            <span class="me-1">{{ $payment->invoice->customerProduct->product->name ?? 'Product' }}</span>
+                                            @php
+                                                $invStatus = $payment->invoice->status ?? 'unpaid';
+                                                $invBadgeClass = match($invStatus) {
+                                                    'paid' => 'bg-success',
+                                                    'partial' => 'bg-warning text-dark',
+                                                    default => 'bg-danger'
+                                                };
+                                            @endphp
+                                            <span class="badge {{ $invBadgeClass }} border" style="font-size: 0.65rem; padding: 0.25em 0.5em;">{{ ucfirst($invStatus) }}</span>
+                                        </div>
                                     </td>
                                     <td>
                                         {{ $payment->payment_date->format('M d, Y') }}
@@ -203,16 +211,29 @@
                                         @endif
                                     </td>
                                     <td>
-                                        @if($payment->transaction_id)
-                                            <code>{{ $payment->transaction_id }}</code>
+                                        @if($payment->status == 'pending')
+                                            <span class="badge bg-warning text-dark rounded-pill px-3 py-1">
+                                                <i class="fas fa-clock me-1"></i> Pending Approval
+                                            </span>
+                                        @elseif($payment->status == 'completed')
+                                            @if(($payment->invoice->status ?? '') == 'partial')
+                                                <span class="badge bg-info text-dark rounded-pill px-3 py-1">
+                                                    <i class="fas fa-adjust me-1"></i> Partial
+                                                </span>
+                                            @elseif(($payment->invoice->status ?? '') == 'paid')
+                                                <span class="badge bg-success rounded-pill px-3 py-1">
+                                                    <i class="fas fa-check-circle me-1"></i> Paid
+                                                </span>
+                                            @else
+                                                <span class="badge bg-success rounded-pill px-3 py-1">
+                                                    <i class="fas fa-check-circle me-1"></i> Received
+                                                </span>
+                                            @endif
                                         @else
-                                            <span class="text-muted">N/A</span>
+                                            <span class="badge bg-danger rounded-pill px-3 py-1">
+                                                <i class="fas fa-times-circle me-1"></i> {{ ucfirst($payment->status) }}
+                                            </span>
                                         @endif
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-success rounded-pill px-3 py-1">
-                                            <i class="fas fa-check-circle me-1"></i> Completed
-                                        </span>
                                     </td>
                                     <td class="text-end">
                                         <div class="btn-group btn-group-sm">

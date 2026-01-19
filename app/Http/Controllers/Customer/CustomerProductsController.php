@@ -204,15 +204,34 @@ class CustomerProductsController extends Controller
 
             if ($paymentResult['success']) {
                 // Create payment record
+                $paymentNotes = $request->notes ?? 'Self-service subscription payment';
+                if (isset($paymentResult['payment_id'])) {
+                    $paymentNotes .= ' | PaymentID: ' . $paymentResult['payment_id'];
+                }
+
                 $payment = Payment::create([
                     'invoice_id' => $invoice->invoice_id,
                     'c_id' => $customer->c_id,
                     'amount' => $subscriptionAmount,
                     'payment_method' => $request->payment_method,
                     'payment_date' => Carbon::now()->toDateString(),
-                    'status' => 'pending', // Will be updated after gateway confirmation
-                    'notes' => $request->notes ?? 'Self-service subscription payment'
+                    'status' => $request->payment_method === 'cash' ? 'completed' : 'pending', // Auto-complete cash, others pending
+                    'notes' => $paymentNotes
                 ]);
+
+                // For cash payments, we can immediately mark the invoice as paid and activate the subscription
+                if ($request->payment_method === 'cash') {
+                    $invoice->update([
+                        'received_amount' => $subscriptionAmount,
+                        'status' => 'paid',
+                        'next_due' => 0
+                    ]);
+
+                    $customerProduct->update([
+                        'status' => 'active',
+                        'is_active' => true
+                    ]);
+                }
 
                 DB::commit();
 

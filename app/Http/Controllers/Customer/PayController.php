@@ -156,6 +156,9 @@ class PayController extends Controller
             return back()->withErrors(['amount' => 'Payment amount cannot exceed the due amount (৳' . number_format($remaining, 2) . ')']);
         }
         
+        // Determine status
+        $status = $request->payment_method === 'cash' ? 'completed' : 'pending';
+
         // Create payment
         $payment = Payment::create([
             'c_id' => $customer->c_id,
@@ -165,19 +168,21 @@ class PayController extends Controller
             'transaction_id' => $request->transaction_id,
             'payment_date' => $request->payment_date,
             'notes' => $request->notes,
-            'status' => 'completed',
+            'status' => $status,
         ]);
         
-        // Update invoice status
-        $invoice->received_amount += $request->amount;
-        
-        if ($invoice->received_amount >= $invoice->total_amount) {
-            $invoice->status = 'paid';
-        } elseif ($invoice->received_amount > 0) {
-            $invoice->status = 'partial';
+        // Update invoice status ONLY if payment is completed (e.g. Cash)
+        if ($status === 'completed') {
+            $invoice->received_amount += $request->amount;
+            
+            if ($invoice->received_amount >= $invoice->total_amount) {
+                $invoice->status = 'paid';
+            } elseif ($invoice->received_amount > 0) {
+                $invoice->status = 'partial';
+            }
+            
+            $invoice->save();
         }
-        
-        $invoice->save();
         
         return redirect()->route('customer.payments.index')
             ->with('success', 'Payment of ৳' . number_format($request->amount, 2) . ' has been recorded successfully!');
@@ -209,16 +214,21 @@ class PayController extends Controller
         $status = $request->get('status');
         
         if ($status === 'success' && $paymentID) {
-            // Verify payment with bKash
+            // Execute payment with bKash
             $paymentGateway = new \App\Services\PaymentGatewayService();
-            $verification = $paymentGateway->verifyPayment($paymentID, 'bkash');
+            $execution = $paymentGateway->executeBkashPayment($paymentID);
             
-            if ($verification['success'] && $verification['status'] === 'Completed') {
+            if ($execution['success']) {
                 // Update payment and invoice status
-                $this->updatePaymentStatus($paymentID, 'completed', $verification['transaction_id']);
+                $success = $this->updatePaymentStatus($paymentID, 'completed', $execution['transaction_id']);
                 
-                return redirect()->route('customer.products.index')
-                    ->with('success', '🎉 Payment successful! Your subscription is now active.');
+                if ($success) {
+                    return redirect()->route('customer.products.browse')
+                        ->with('success', '🎉 Payment successful! Your subscription is now active.');
+                }
+            } else {
+                 return redirect()->route('customer.products.browse')
+                    ->with('error', 'Payment execution failed: ' . ($execution['error'] ?? 'Unknown error'));
             }
         }
         

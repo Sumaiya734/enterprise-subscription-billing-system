@@ -154,16 +154,18 @@
                                         <div class="col-md-6">
                                             <div class="payment-method-card">
                                                 <input type="radio" class="btn-check" name="payment_method" id="bkash" value="bkash" {{ old('payment_method') == 'bkash' ? 'checked' : '' }}>
-                                                <label class="btn btn-outline-primary w-100 p-3" for="bkash">
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="payment-icon me-3">
-                                                            <img src="https://cdn.bka.sh/images/bkash_logo.png" alt="bKash" style="height: 30px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
-                                                            <span style="display: none;">📱</span>
+                                                <label class="btn btn-outline-primary w-100 p-3" for="bkash" style="border-color: #e2136e !important;">
+                                                    <div class="d-flex align-items-center justify-content-between">
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="payment-icon me-3">
+                                                                <img src="{{ asset('assets/bkash logo.jpg') }}" alt="bKash" style="height: 40px;">
+                                                            </div>
+                                                            <div class="text-start">
+                                                                <strong style="color: #e2136e;">bKash</strong>
+                                                                <div class="small text-muted">Pay with bKash</div>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <strong>bKash</strong>
-                                                            <div class="small text-muted">Mobile Banking</div>
-                                                        </div>
+                                                        <i class="fas fa-check-circle text-primary check-icon" style="display: none; color: #e2136e !important;"></i>
                                                     </div>
                                                 </label>
                                             </div>
@@ -466,6 +468,17 @@
         .payment-method-card .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .payment-method-card input:checked + label .check-icon {
+            display: inline-block !important;
+        }
+
+        /* Specific style for bKash when selected */
+        .payment-method-card input#bkash:checked + label {
+            background: rgba(226, 19, 110, 0.05) !important;
+            border-color: #e2136e !important;
+            color: #333 !important;
         }
         
         .payment-icon {

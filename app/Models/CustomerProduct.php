@@ -59,6 +59,9 @@ class CustomerProduct extends Model
         'is_expired',
         'days_until_due',
         'is_due_soon',
+        'expire_date',
+        'is_expired_grace_period',
+        'days_until_expire',
     ];
 
     // ==================== RELATIONSHIPS ====================
@@ -156,6 +159,37 @@ class CustomerProduct extends Model
         return $this->isActive() && $this->days_until_due <= 7;
     }
 
+    // New accessor for expire_date (due_date + 7 days)
+    public function getExpireDateAttribute(): ?string
+    {
+        if (!$this->due_date) {
+            return null;
+        }
+        
+        return Carbon::parse($this->due_date)->addDays(7)->format('Y-m-d');
+    }
+
+    // Check if product is expired considering the 7-day grace period
+    public function getIsExpiredGracePeriodAttribute(): bool
+    {
+        if (!$this->expire_date) {
+            return false;
+        }
+        
+        return Carbon::parse($this->expire_date)->isPast();
+    }
+
+    // Get days until expire date
+    public function getDaysUntilExpireAttribute(): int
+    {
+        if (!$this->expire_date) {
+            return 0;
+        }
+        
+        $days = Carbon::parse($this->expire_date)->diffInDays(now(), false);
+        return $days <= 0 ? abs($days) : 0;
+    }
+
     public function getStatusBadgeAttribute(): string
     {
         if (!$this->is_active) {
@@ -209,6 +243,24 @@ class CustomerProduct extends Model
             'status' => 'expired',
             'is_active' => false,
         ]);
+    }
+
+    // Check if product should be deactivated based on expire date and deactivate if needed
+    public function checkAndDeactivateIfExpired(): bool
+    {
+        // Only check active products
+        if (!$this->isActive()) {
+            return false;
+        }
+        
+        // Check if expire date has passed
+        if ($this->is_expired_grace_period) {
+            $this->deactivate();
+            Log::info("Product automatically deactivated: CP ID {$this->cp_id}, Product {$this->product->name}, Expired on {$this->expire_date}");
+            return true;
+        }
+        
+        return false;
     }
 
     // Add scope for active products

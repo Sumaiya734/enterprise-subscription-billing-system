@@ -286,6 +286,8 @@
     </div>
 
     <!-- SCRIPTS -->
+    <!-- Load jQuery first with fallback -->
+    <!-- SCRIPTS -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
@@ -333,21 +335,31 @@
             const tList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tList.map(function (t) { return new bootstrap.Tooltip(t); });
 
-            // DataTables auto init (tables with data-datatable="true")
-            document.querySelectorAll('table[data-datatable="true"]').forEach(function (tableEl) {
-                $(tableEl).DataTable({
-                    pageLength: 10,
-                    responsive: true,
-                    language: {
-                        search: "_INPUT_",
-                        searchPlaceholder: "Search...",
-                        paginate: {
-                            previous: "<i class='fa-solid fa-chevron-left'></i>",
-                            next: "<i class='fa-solid fa-chevron-right'></i>"
+            // DataTables auto init (tables with data-datatable="true") - defensive approach
+            setTimeout(function() {
+                if (typeof $ !== 'undefined' && $.fn.DataTable) {
+                    document.querySelectorAll('table[data-datatable="true"]').forEach(function (tableEl) {
+                        try {
+                            $(tableEl).DataTable({
+                                pageLength: 10,
+                                responsive: true,
+                                language: {
+                                    search: "_INPUT_",
+                                    searchPlaceholder: "Search...",
+                                    paginate: {
+                                        previous: "<i class='fa-solid fa-chevron-left'></i>",
+                                        next: "<i class='fa-solid fa-chevron-right'></i>"
+                                    }
+                                }
+                            });
+                        } catch (e) {
+                            console.error('Error initializing DataTable:', e);
                         }
-                    }
-                });
-            });
+                    });
+                } else {
+                    console.warn('DataTable not available, skipping initialization');
+                }
+            }, 500);
         });
     </script>
 

@@ -532,30 +532,27 @@
                                         <button class="btn btn-secondary btn-sm" disabled title="Month Closed - No payments allowed">
                                             <i class="fas fa-lock"></i> Month Closed
                                         </button>
-                                        @elseif($isConfirmed)
-                                        {{-- Confirmed Status - Show View + Confirmed (muted) --}}
+
+                                        @elseif($isConfirmed || ($invoice->is_closed ?? false))
+                                        {{-- Confirmed / Closed Status --}}
                                         <button class="btn btn-outline-info btn-sm view-invoice-btn" data-invoice-id="{{ $invoice->invoice_id }}" data-bs-toggle="modal" data-bs-target="#viewInvoiceModal" title="View Invoice">
                                             <i class="fas fa-eye"></i> View
                                         </button>
                                         <button class="btn btn-secondary btn-sm" disabled title="User payment confirmed - Due carried forward">
                                             <i class="fas fa-check-circle"></i> Confirmed
                                         </button>
+
                                         @elseif($isFullyPaid)
                                         {{-- Fully Paid --}}
                                         <button class="btn btn-outline-info btn-sm view-invoice-btn" data-invoice-id="{{ $invoice->invoice_id }}" data-bs-toggle="modal" data-bs-target="#viewInvoiceModal" title="View Invoice">
                                             <i class="fas fa-eye"></i> View
                                         </button>
-                                        @if($isMonthlyBilling)
-                                        <button class="btn btn-secondary btn-sm" disabled title="Payment Confirmed - Monthly Billing">
-                                            <i class="fas fa-check-circle"></i> Confirmed
+                                        <button class="btn btn-success btn-sm" disabled title="Fully Paid">
+                                            <i class="fas fa-check-circle"></i> Paid
                                         </button>
-                                        @else
-                                        <button class="btn btn-success btn-sm" disabled title="{{ $isAdvancePayment ? 'Advance Payment Confirmed' : 'Payment Confirmed - Multi-Month Billing' }}">
-                                            <i class="fas fa-check-circle"></i> {{ $isAdvancePayment ? 'Advance Paid' : 'Confirmed' }}
-                                        </button>
-                                        @endif
+
                                         @elseif($hasPartialPayment)
-                                        {{-- Partial Payment: Show Edit Payment + View + Confirm --}}
+                                        {{-- Partial Payment --}}
                                         <button class="btn btn-warning btn-sm payment-btn"
                                             data-bs-toggle="modal"
                                             data-bs-target="#addPaymentModal"
@@ -578,8 +575,6 @@
                                         <button class="btn btn-outline-info btn-sm view-invoice-btn" data-invoice-id="{{ $invoice->invoice_id }}" data-bs-toggle="modal" data-bs-target="#viewInvoiceModal" title="View Invoice">
                                             <i class="fas fa-eye"></i> View
                                         </button>
-
-                                        {{-- Add Confirm button --}}
                                         <button class="btn btn-warning btn-sm confirm-user-btn"
                                             data-bs-toggle="modal"
                                             data-bs-target="#confirmUserPaymentModal"
@@ -588,11 +583,12 @@
                                             data-customer-name="{{ e($customer->name ?? 'Customer') }}"
                                             data-product-name="{{ e($product->name ?? 'Unknown Product') }}"
                                             data-next-due="{{ number_format($nextDue, 2, '.', '') }}"
-                                            title="Confirm and close user's month, carry forward remaining amount">
+                                            title="Confirm and close user's month">
                                             <i class="fas fa-check"></i> Confirm
                                         </button>
+
                                         @else
-                                        {{-- No Payment: Show Pay Now only --}}
+                                        {{-- No Payment (Unpaid) --}}
                                         <button class="btn btn-primary btn-sm payment-btn"
                                             data-bs-toggle="modal"
                                             data-bs-target="#addPaymentModal"
@@ -611,6 +607,18 @@
                                             data-product-name="{{ e($product->name ?? 'Unknown Product') }}"
                                             title="Add Payment">
                                             <i class="fas fa-money-bill-wave"></i> Pay Now
+                                        </button>
+                                        {{-- Allow confirm even with 0 payment (carry forward all) --}}
+                                        <button class="btn btn-warning btn-sm confirm-user-btn mt-1"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#confirmUserPaymentModal"
+                                            data-invoice-id="{{ $invoice->invoice_id }}"
+                                            data-cp-id="{{ $customerProduct->cp_id }}"
+                                            data-customer-name="{{ e($customer->name ?? 'Customer') }}"
+                                            data-product-name="{{ e($product->name ?? 'Unknown Product') }}"
+                                            data-next-due="{{ number_format($nextDue, 2, '.', '') }}"
+                                            title="Confirm and close user's month">
+                                            <i class="fas fa-check"></i> Confirm
                                         </button>
                                         @endif
                             </div>
