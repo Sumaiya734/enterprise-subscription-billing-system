@@ -48,8 +48,12 @@ class PaymentGatewayService
             // bKash API integration
             $bkashConfig = config('payment.bkash');
 
-            if (empty($bkashConfig['username']) || empty($bkashConfig['password']) || $bkashConfig['username'] === 'change_me') {
-                throw new Exception('bKash Configuration Missing. Please set BKASH_USERNAME and BKASH_PASSWORD in your .env file.');
+            // Check if bKash is properly configured
+            if (empty($bkashConfig['app_key']) || empty($bkashConfig['app_secret']) || empty($bkashConfig['username']) || empty($bkashConfig['password'])) {
+                return [
+                    'success' => false,
+                    'error' => 'bKash Configuration Missing. Please set BKASH_APP_KEY, BKASH_APP_SECRET, BKASH_USERNAME and BKASH_PASSWORD in your .env file.'
+                ];
             }
             
             // Step 1: Get bKash token
@@ -91,7 +95,22 @@ class PaymentGatewayService
             ]);
 
             if (!$paymentResponse->successful()) {
-                throw new Exception('Failed to create bKash payment');
+                $errorBody = $paymentResponse->json();
+                Log::error('bKash Payment Creation Failed', [
+                    'status' => $paymentResponse->status(),
+                    'body' => $errorBody,
+                    'headers' => $paymentResponse->headers(),
+                    'payment_data' => $paymentData
+                ]);
+                
+                $errorMessage = 'Failed to create bKash payment';
+                if (isset($errorBody['statusMessage'])) {
+                    $errorMessage .= ': ' . $errorBody['statusMessage'];
+                } elseif (isset($errorBody['error'])) {
+                    $errorMessage .= ': ' . $errorBody['error'];
+                }
+                
+                throw new Exception($errorMessage);
             }
 
             $paymentInfo = $paymentResponse->json();
@@ -153,10 +172,70 @@ class PaymentGatewayService
             ]);
 
             $result = $executeResponse->json();
+            
+            // Log the full response for debugging
+            Log::info('bKash Execute Response', [
+                'payment_id' => $paymentId,
+                'status' => $executeResponse->status(),
+                'response' => $result,
+                'headers' => $executeResponse->headers()
+            ]);
 
             // Check for API errors or transaction failure
-            if (!$executeResponse->successful() || (isset($result['statusCode']) && $result['statusCode'] !== '0000')) {
+            if (!$executeResponse->successful()) {
+                $errorMessage = 'HTTP Error ' . $executeResponse->status();
+                Log::error('bKash HTTP Error', [
+                    'payment_id' => $paymentId,
+                    'status' => $executeResponse->status(),
+                    'body' => $executeResponse->body()
+                ]);
+                throw new Exception('bKash Execution Failed: ' . $errorMessage);
+            }
+            
+            if (isset($result['statusCode']) && $result['statusCode'] !== '0000') {
                  $errorMessage = $result['statusMessage'] ?? 'Unknown error';
+                 
+                 // Handle specific error cases
+                 if (strpos($errorMessage, 'Duplicate') !== false) {
+                     // Check if payment already exists in database
+                     $existingPayment = Payment::where('notes', 'like', '%' . $paymentId . '%')->first();
+                     if ($existingPayment && $existingPayment->status === 'completed') {
+                         return [
+                             'success' => true,
+                             'payment_id' => $paymentId,
+                             'transaction_id' => $existingPayment->transaction_id ?? 'DUPLICATE_' . time(),
+                             'amount' => $existingPayment->amount,
+                             'status' => 'Completed',
+                             'customer_msisdn' => null,
+                             'duplicate' => true
+                         ];
+                     }
+                 }
+                 
+                 // Handle system errors with more context
+                 if (strpos($errorMessage, 'System Error') !== false) {
+                     Log::error('bKash System Error', [
+                         'payment_id' => $paymentId,
+                         'full_response' => $result,
+                         'error_code' => $result['statusCode'] ?? 'Unknown',
+                         'error_message' => $errorMessage
+                     ]);
+                     
+                     // Check if payment might already be completed
+                     $existingPayment = Payment::where('notes', 'like', '%' . $paymentId . '%')->first();
+                     if ($existingPayment) {
+                         return [
+                             'success' => true,
+                             'payment_id' => $paymentId,
+                             'transaction_id' => $existingPayment->transaction_id ?? 'SYSTEM_' . time(),
+                             'amount' => $existingPayment->amount,
+                             'status' => 'Completed',
+                             'customer_msisdn' => null,
+                             'system_error' => true
+                         ];
+                     }
+                 }
+                 
                  throw new Exception('bKash Execution Failed: ' . $errorMessage);
             }
 

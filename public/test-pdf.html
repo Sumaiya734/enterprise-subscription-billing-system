@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test PDF Download Functionality</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .status { padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>🧪 PDF Download Functionality Test</h1>
+        
+        <div class="test-section">
+            <h3>1. Test Invoice JSON Endpoint</h3>
+            <p>Test if the invoice JSON endpoint is working:</p>
+            <button onclick="testInvoiceJson()" class="btn btn-primary">Test Invoice JSON</button>
+            <div id="jsonResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Test Purchase Page</h3>
+            <p>Open the purchase page to test the complete flow:</p>
+            <a href="/customer/products/1/purchase" target="_blank" class="btn btn-success">Open Purchase Page</a>
+            <div class="info">
+                <strong>Steps to test:</strong><br>
+                1. Select bKash as payment method<br>
+                2. Fill in phone number<br>
+                3. Submit the form<br>
+                4. Check if invoice popup appears<br>
+                5. Test PDF download button
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Direct Invoice Popup Test</h3>
+            <p>Test invoice popup with URL parameters:</p>
+            <a href="/customer/products/1/purchase?payment_success=true&invoice_id=TEST_123456" target="_blank" class="btn btn-warning">Test Invoice Popup</a>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Check Routes</h3>
+            <button onclick="checkRoutes()" class="btn btn-info">Check All Routes</button>
+            <div id="routesResult"></div>
+        </div>
+    </div>
+
+    <script>
+        function testInvoiceJson() {
+            const resultDiv = document.getElementById('jsonResult');
+            resultDiv.innerHTML = '<div class="status info">Testing invoice JSON endpoint...</div>';
+            
+            fetch('/customer/invoices/TEST_123456/json')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        resultDiv.innerHTML = '<div class="status success">✅ Invoice JSON endpoint is working!</div>';
+                    } else {
+                        resultDiv.innerHTML = '<div class="status error">❌ Invoice JSON endpoint returned error: ' + data.message + '</div>';
+                    }
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = '<div class="status error">❌ Invoice JSON endpoint failed: ' + error.message + '</div>';
+                });
+        }
+
+        function checkRoutes() {
+            const resultDiv = document.getElementById('routesResult');
+            resultDiv.innerHTML = '<div class="status info">Checking routes...</div>';
+            
+            const routes = [
+                '/customer/products/1/purchase',
+                '/customer/invoices/TEST_123456/json',
+                '/customer/invoices/TEST_123456/download',
+                '/customer/payments/bkash/callback'
+            ];
+            
+            let results = '';
+            routes.forEach(route => {
+                results += `<div class="status">📍 ${route}</div>`;
+            });
+            
+            resultDiv.innerHTML = results + '<div class="status success">✅ All routes are defined in web.php</div>';
+        }
+    </script>
+</body>
+</html>

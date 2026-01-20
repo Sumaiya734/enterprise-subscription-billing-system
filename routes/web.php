@@ -284,6 +284,7 @@ Route::prefix('customer')->name('customer.')->middleware(['auth', 'customer'])->
     Route::prefix('invoices')->name('invoices.')->group(function () {
         Route::get('/', [InvoiceController::class, 'index'])->name('index');
         Route::get('/{id}', [InvoiceController::class, 'show'])->name('show');
+        Route::get('/{id}/json', [InvoiceController::class, 'getInvoiceJson'])->name('json');
         Route::get('/{id}/download', [InvoiceController::class, 'download'])->name('download');
         Route::get('/{id}/print', [InvoiceController::class, 'print'])->name('print');
     });

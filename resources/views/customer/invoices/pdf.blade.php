@@ -2,168 +2,288 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Invoice {{ $invoice->invoice_number }}</title>
+    <title>Invoice</title>
+
     <style>
         body {
-            font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 13px;
             color: #555;
-            font-size: 14px;
-            line-height: 20px;
+            margin: 0;
+            padding: 10px;
         }
+
         .invoice-box {
-            max-width: 800px;
+            max-width: 780px;
             margin: auto;
-            padding: 30px;
+            padding: 20px;
             border: 1px solid #eee;
-            box-shadow: 0 0 10px rgba(0, 0, 0, .15);
         }
+
         .header {
-            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            width: 100%;
         }
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
+        
+        .header .company-info {
+            flex: 0 0 45%;
+            text-align: left;
+        }
+        
+        .header .invoice-details {
+            flex: 0 0 45%;
+            text-align: right;
+        }
+
+        .company-info h1 {
+            margin: 0;
+            font-size: 22px;
             color: #333;
         }
-        .invoice-details {
-            text-align: right;
+
+        .company-info p,
+        .invoice-details p {
+            margin: 2px 0;
+            font-size: 12px;
         }
+
+        .invoice-details h2 {
+            margin: 0 0 5px 0;
+            font-size: 18px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 11px;
+            border-radius: 4px;
+            color: #fff;
+        }
+
+        .paid { background: #28a745; }
+        .partial { background: #ffc107; color: #000; }
+
+        .bill-to {
+            margin-bottom: 12px;
+        }
+
+        .bill-to h3 {
+            font-size: 14px;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #333;
+        }
+
+        .bill-to p {
+            margin: 2px 0;
+            font-size: 12px;
+        }
+
         table {
             width: 100%;
-            line-height: inherit;
-            text-align: left;
             border-collapse: collapse;
+            page-break-inside: avoid;
         }
-        table td {
-            padding: 5px;
-            vertical-align: top;
+
+        th {
+            background: #f5f5f5;
+            font-size: 12px;
+            padding: 6px;
+            border-bottom: 1px solid #333;
         }
-        table tr.top table td {
-            padding-bottom: 20px;
-        }
-        table tr.heading td {
-            background: #eee;
-            border-bottom: 1px solid #ddd;
-            font-weight: bold;
-        }
-        table tr.item td {
+
+        td {
+            padding: 6px;
+            font-size: 12px;
             border-bottom: 1px solid #eee;
         }
-        table tr.item.last td {
-            border-bottom: none;
+
+        .summary {
+            margin-top: 10px;
         }
-        table tr.total td:nth-child(2) {
-            border-top: 2px solid #eee;
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            padding: 4px 0;
+        }
+
+        .summary-row.total {
             font-weight: bold;
+            font-size: 13px;
         }
-        .text-right {
+
+        .summary-row.paid {
+            color: #28a745;
+        }
+
+        .summary-row.due {
+            font-weight: bold;
+            font-size: 14px;
+            color: #007bff;
+            border-top: 1px solid #333;
+            margin-top: 5px;
+            padding-top: 5px;
+        }
+
+        .actions {
+            margin-top: 10px;
             text-align: right;
         }
-        .badge {
+
+        .btn {
             padding: 5px 10px;
-            border-radius: 4px;
-            color: white;
-            font-size: 12px;
-            display: inline-block;
+            font-size: 11px;
+            border-radius: 3px;
+            border: none;
+            cursor: pointer;
+            margin-left: 5px;
         }
-        .bg-success { background-color: #28a745; }
-        .bg-warning { background-color: #ffc107; color: #000; }
-        .bg-danger { background-color: #dc3545; }
+
+        .btn-print { background: #007bff; color: #fff; }
+        .btn-pay { background: #28a745; color: #fff; }
+
+        .footer {
+            margin-top: 12px;
+            padding-top: 8px;
+            font-size: 11px;
+            text-align: center;
+            border-top: 1px solid #eee;
+        }
     </style>
 </head>
+
 <body>
-    <div class="invoice-box">
-        <table cellpadding="0" cellspacing="0">
-            <tr class="top">
-                <td colspan="2">
-                    <table>
-                        <tr>
-                            <td class="title">
-                                <div class="logo">NanoSoft</div>
-                            </td>
-                            <td class="invoice-details">
-                                <strong>Invoice #:</strong> {{ $invoice->invoice_number }}<br>
-                                <strong>Date:</strong> {{ $invoice->issue_date->format('M d, Y') }}<br>
-                                <strong>Status:</strong> 
-                                <span class="badge bg-{{ $invoice->status == 'paid' ? 'success' : ($invoice->status == 'pending' ? 'warning' : 'danger') }}">
-                                    {{ ucfirst($invoice->status) }}
-                                </span>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-            
-            <tr>
-                <td colspan="2">
-                    <table>
-                        <tr>
-                            <td>
-                                <strong>Billed To:</strong><br>
-                                {{ $invoice->customerProduct->customer->user->name ?? $invoice->customerProduct->customer->name ?? 'Customer' }}<br>
-                                {{ $invoice->customerProduct->customer->phone ?? '' }}<br>
-                                {{ $invoice->customerProduct->customer->address ?? '' }}
-                            </td>
-                            <td class="text-right">
-                                <strong>Payable To:</strong><br>
-                                NanoSoft<br>
-                                billing@nanosoft.com.bd
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-            
-            <tr class="heading">
-                <td>Item</td>
-                <td class="text-right">Price</td>
-            </tr>
-            
-            <tr class="item">
-                <td>
-                    {{ $invoice->customerProduct->product->name }}
-                    @if($invoice->customerProduct->billing_cycle_months)
-                        <br><small>({{ $invoice->customerProduct->billing_cycle_months }} Month Subscription)</small>
-                    @endif
-                </td>
-                <td class="text-right">
-                    ৳{{ number_format($invoice->subtotal, 2) }}
-                </td>
-            </tr>
 
-            @if($invoice->previous_due > 0)
-            <tr class="item">
-                <td>Previous Due</td>
-                <td class="text-right">৳{{ number_format($invoice->previous_due, 2) }}</td>
-            </tr>
-            @endif
-            
-            <tr class="total">
-                <td></td>
-                <td class="text-right">
-                    Total: ৳{{ number_format($invoice->total_amount, 2) }}
-                </td>
-            </tr>
+<div class="invoice-box">
 
-            <tr class="total">
-                <td></td>
-                <td class="text-right">
-                    Paid: ৳{{ number_format($invoice->received_amount, 2) }}
-                </td>
-            </tr>
+    <!-- HEADER -->
+    <div class="header">
+        <div class="company-info">
+            <h1>NanoSoft</h1>
+            <p>Dhaka, Bangladesh</p>
+            <p>Email: billing@nanosoft.com.bd</p>
+            <p>Phone: 01XXXXXXXXX</p>
+        </div>
 
-            <tr class="total">
-                <td></td>
-                <td class="text-right">
-                    <strong>Due: ৳{{ number_format($invoice->total_amount - $invoice->received_amount, 2) }}</strong>
-                </td>
-            </tr>
-        </table>
-
-        <div style="margin-top: 40px; font-size: 12px; color: #999; text-align: center;">
-            <p>Thank you for your business!</p>
-            <p>This is a computer-generated invoice and does not require a signature.</p>
+        <div class="invoice-details">
+            <h2>INVOICE</h2>
+            <p><strong>Invoice #:</strong> {{ $invoice->invoice_number }}</p>
+            <p><strong>Date:</strong> {{ $invoice->issue_date->format('d M Y') }}</p>
+            <p>
+                <span class="status-badge {{ $invoice->status == 'paid' ? 'paid' : ($invoice->received_amount > 0 ? 'partial' : 'unpaid') }}">
+                    {{ $invoice->status == 'paid' ? 'PAID' : ($invoice->received_amount > 0 ? 'PARTIALLY PAID' : 'UNPAID') }}
+                </span>
+            </p>
         </div>
     </div>
+
+    <!-- BILL TO -->
+    <div class="bill-to">
+        <h3>Bill To</h3>
+        <p><strong>Name:</strong> {{ $invoice->customerProduct->customer->user->name ?? $invoice->customerProduct->customer->name ?? 'Customer' }}</p>
+        <p><strong>Email:</strong> {{ $invoice->customerProduct->customer->email ?? '' }}</p>
+        <p><strong>Phone:</strong> {{ $invoice->customerProduct->customer->phone ?? '' }}</p>
+    </div>
+
+    <!-- ITEMS -->
+    <table>
+        <thead>
+            <tr>
+                <th align="left">Description</th>
+                <th align="center">Qty</th>
+                <th align="right">Price</th>
+                <th align="right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ $invoice->customerProduct->product->name }}</td>
+                <td align="center">{{ $invoice->customerProduct->billing_cycle_months ?? 1 }}</td>
+                <td align="right">৳{{ number_format($invoice->customerProduct->product->price ?? 0, 0) }}</td>
+                <td align="right">৳{{ number_format($invoice->subtotal, 0) }}</td>
+            </tr>
+            @if($invoice->previous_due > 0)
+            <tr>
+                <td>Previous Due Amount</td>
+                <td align="center">—</td>
+                <td align="right">—</td>
+                <td align="right">৳{{ number_format($invoice->previous_due, 0) }}</td>
+            </tr>
+            @endif
+        </tbody>
+    </table>
+
+    <!-- SUMMARY -->
+    <div class="summary">
+        <div class="summary-row">
+            <span>Subtotal</span>
+            <span>৳{{ number_format($invoice->subtotal, 0) }}</span>
+        </div>
+        @if($invoice->previous_due > 0)
+        <div class="summary-row">
+            <span>Previous Due</span>
+            <span>৳{{ number_format($invoice->previous_due, 0) }}</span>
+        </div>
+        @endif
+        <div class="summary-row">
+            <span>Tax</span>
+            <span>৳0</span>
+        </div>
+        <div class="summary-row total">
+            <span>Total</span>
+            <span>৳{{ number_format($invoice->total_amount, 0) }}</span>
+        </div>
+        <div class="summary-row paid">
+            <span>Amount Paid</span>
+            <span>৳{{ number_format($invoice->received_amount, 0) }}</span>
+        </div>
+        <div class="summary-row due">
+            <span>Amount Due</span>
+            <span>৳{{ number_format($invoice->total_amount - $invoice->received_amount, 0) }}</span>
+        </div>
+    </div>
+
+    <!-- PAYMENT HISTORY -->
+    @if($invoice->payments && $invoice->payments->count() > 0)
+    <h3 style="margin-top:12px;font-size:14px;border-bottom:1px solid #333;">
+        Payment History
+    </h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Method</th>
+                <th>Transaction ID</th>
+                <th align="right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($invoice->payments as $payment)
+            <tr>
+                <td>{{ \Carbon\Carbon::parse($payment->payment_date)->format('d M Y') }}</td>
+                <td>{{ $payment->payment_method }}</td>
+                <td>{{ $payment->transaction_id ?? '—' }}</td>
+                <td align="right">৳{{ number_format($payment->amount, 0) }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+    @endif
+
+    <!-- FOOTER -->
+    <div class="footer">
+        Thank you for your business.
+    </div>
+
+</div>
+
 </body>
 </html>
+

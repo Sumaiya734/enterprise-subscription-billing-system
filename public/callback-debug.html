@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🔍 bKash Callback Error Diagnosis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .warning { background-color: #fff3cd; color: #856404; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .info { background-color: #d1ecf1; color: #0c5460; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .log-section { background-color: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; }
+        .scenario { padding: 15px; margin: 10px 0; border-left: 4px solid #007bff; background-color: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>🔍 bKash Callback Error Diagnosis</h1>
+        
+        <div class="warning">
+            <h3>⚠️ Error: "Payment failed or was cancelled. Please try again."</h3>
+            <p>This error occurs when the bKash callback doesn't receive the expected success parameters.</p>
+        </div>
+
+        <div class="info">
+            <h3>✅ Enhanced Debugging Added:</h3>
+            <p>I've added comprehensive logging to identify exactly why this error occurs.</p>
+        </div>
+
+        <div class="test-section">
+            <h3>🎯 Possible Causes & Solutions:</h3>
+            
+            <div class="scenario">
+                <h5>1. Missing Payment ID</h5>
+                <p><strong>Cause:</strong> bKash doesn't return paymentID in callback</p>
+                <p><strong>Log Message:</strong> "bKash callback missing paymentID"</p>
+                <p><strong>Solution:</strong> Check bKash callback URL configuration</p>
+            </div>
+
+            <div class="scenario">
+                <h5>2. Payment Cancelled by User</h5>
+                <p><strong>Cause:</strong> User clicks cancel/back on bKash page</p>
+                <p><strong>Log Message:</strong> "bKash payment cancelled"</p>
+                <p><strong>User Message:</strong> "Payment was cancelled. You can try again anytime."</p>
+            </div>
+
+            <div class="scenario">
+                <h5>3. Payment Failed at bKash</h5>
+                <p><strong>Cause:</strong> bKash declines payment (insufficient funds, etc.)</p>
+                <p><strong>Log Message:</strong> "bKash payment failed"</p>
+                <p><strong>User Message:</strong> "Payment failed. Please try again or use a different payment method."</p>
+            </div>
+
+            <div class="scenario">
+                <h5>4. Unknown Status</h5>
+                <p><strong>Cause:</strong> bKash returns unexpected status</p>
+                <p><strong>Log Message:</strong> "bKash callback - unknown status"</p>
+                <p><strong>User Message:</strong> "Payment failed or was cancelled. Please try again."</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 Debugging Steps:</h3>
+            <ol>
+                <li><strong>Test bKash payment:</strong> <a href="/customer/products/1/purchase" target="_blank" class="btn btn-primary">Start Payment</a></li>
+                <li><strong>Check Laravel logs:</strong> <code>storage/logs/laravel.log</code></li>
+                <li><strong>Look for these log entries:</strong>
+                    <div class="log-section">
+                        bKash Callback Received<br>
+                        bKash Payment already completed<br>
+                        bKash execution failed<br>
+                        bKash callback missing paymentID<br>
+                        bKash payment cancelled<br>
+                        bKash payment failed<br>
+                        bKash callback - unknown status
+                    </div>
+                </li>
+                <li><strong>Identify the exact cause</strong> from the log messages</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h3>🛠️ Common Issues & Fixes:</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Configuration Issues</h5>
+                    <ul>
+                        <li>Wrong callback URL</li>
+                        <li>Missing bKash credentials</li>
+                        <li>Sandbox vs Live mismatch</li>
+                        <li>Firewall blocking callbacks</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h5>Payment Flow Issues</h5>
+                    <ul>
+                        <li>User cancels payment</li>
+                        <li>Insufficient funds</li>
+                        <li>Network timeout</li>
+                        <li>bKash server issues</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 What to Check:</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>bKash Configuration</h5>
+                    <ul>
+                        <li>✅ Callback URL: <code>route('customer.payments.bkash.callback')</code></li>
+                        <li>✅ App Key & Secret correct</li>
+                        <li>✅ Sandbox mode enabled</li>
+                        <li>✅ SSL certificate valid</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h5>Callback Parameters</h5>
+                    <ul>
+                        <li>Expected: <code>?paymentID=xxx&status=success</code></li>
+                        <li>Check all parameters received</li>
+                        <li>Verify bKash is sending data</li>
+                        <li>Test with different browsers</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="info">
+            <h3>🎯 Next Steps:</h3>
+            <ol>
+                <li><strong>Test the payment flow</strong> with enhanced logging</li>
+                <li><strong>Check the logs</strong> immediately after testing</li>
+                <li><strong>Identify the specific cause</strong> from log messages</li>
+                <li><strong>Fix the root issue</strong> based on findings</li>
+            </ol>
+        </div>
+
+        <div class="test-section text-center">
+            <h3>🧪 Ready to Test</h3>
+            <p>The enhanced logging will now show exactly why the error occurs!</p>
+            <a href="/customer/products/1/purchase" target="_blank" class="btn btn-success btn-lg">
+                🚀 Test bKash Payment (Enhanced Debugging)
+            </a>
+        </div>
+    </div>
+</body>
+</html>

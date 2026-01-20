@@ -1056,7 +1056,7 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times me-1"></i>Cancel
                 </button>
-                <button type="button" class="btn btn-warning" id="confirmUserPaymentBtn" onclick="executeConfirmUserPayment()">
+                <button type="button" class="btn btn-warning" id="confirmUserPaymentBtn">
                     <i class="fas fa-check me-1"></i>Confirm & Carry Forward
                 </button>
             </div>
@@ -1786,11 +1786,13 @@
     // Store confirmation data globally
     // let confirmPaymentData = {};
 
-    // Store confirmation data globally
     let confirmPaymentData = {};
 
     // Function to execute the confirmation WITHOUT page refresh
     window.executeConfirmUserPayment = function() {
+        console.log('=== EXECUTE CONFIRM USER PAYMENT STARTED ===');
+        console.log('confirmPaymentData:', confirmPaymentData);
+        
         const {
             invoiceId,
             cpId,
@@ -1799,7 +1801,7 @@
             nextDue
         } = confirmPaymentData;
 
-        console.log('executeConfirmUserPayment called with data:', {
+        console.log('Destructured data:', {
             invoiceId,
             cpId,
             customerName,
@@ -1808,17 +1810,35 @@
         });
 
         if (!invoiceId || !cpId) {
-            showToast('Error', 'Missing invoice data', 'danger');
+            console.error('Missing required data:', { invoiceId, cpId });
+            showToast('Error', 'Missing required data for confirmation', 'danger');
             return;
         }
 
+        console.log('All required data present, proceeding...');
+
         // Show loading state on button
         const confirmBtn = document.getElementById('confirmUserPaymentBtn');
+        console.log('Confirm button element:', confirmBtn);
+        
+        if (!confirmBtn) {
+            console.error('Confirm button not found!');
+            return;
+        }
+        
         const originalBtnHtml = confirmBtn.innerHTML;
         confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing...';
         confirmBtn.disabled = true;
 
+        console.log('Sending AJAX request to:', '{{ route("admin.billing.confirm-user-payment") }}');
+
         // Send AJAX request to confirm user payment
+        console.log('Sending AJAX request with data:', {
+            invoice_id: invoiceId,
+            cp_id: cpId,
+            next_due: parseFloat(nextDue)
+        });
+
         fetch('{{ route("admin.billing.confirm-user-payment") }}', {
                 method: 'POST',
                 headers: {
@@ -1831,7 +1851,13 @@
                     next_due: parseFloat(nextDue)
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Fetch response received:', response);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 console.log('AJAX response received:', data);
                 if (data.success) {
@@ -2074,18 +2100,59 @@
 
     // Handle confirm user button clicks - populate modal when shown
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM Content Loaded - Setting up event listeners');
+        
+        // Test: Add click listeners to all confirm buttons
+        const confirmButtons = document.querySelectorAll('.confirm-user-btn');
+        console.log('Found confirm buttons:', confirmButtons.length);
+        
+        confirmButtons.forEach((button, index) => {
+            console.log(`Button ${index}:`, button);
+            button.addEventListener('click', function(e) {
+                console.log('Confirm button clicked!', this);
+                console.log('Button data attributes:', {
+                    invoiceId: this.getAttribute('data-invoice-id'),
+                    cpId: this.getAttribute('data-cp-id'),
+                    customerName: this.getAttribute('data-customer-name'),
+                    productName: this.getAttribute('data-product-name'),
+                    nextDue: this.getAttribute('data-next-due')
+                });
+            });
+        });
+        
         const confirmUserPaymentModal = document.getElementById('confirmUserPaymentModal');
         if (confirmUserPaymentModal) {
+            // Add event listener for the confirm button
+            const confirmBtn = document.getElementById('confirmUserPaymentBtn');
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Confirm button clicked via event listener');
+                    executeConfirmUserPayment();
+                });
+            }
+            
             confirmUserPaymentModal.addEventListener('show.bs.modal', function(event) {
+                console.log('Modal show event triggered');
                 const button = event.relatedTarget;
+                console.log('Related target button:', button);
 
                 if (button && button.classList.contains('confirm-user-btn')) {
+                    console.log('Button has confirm-user-btn class');
                     const invoiceId = button.getAttribute('data-invoice-id');
                     const cpId = button.getAttribute('data-cp-id');
                     const customerName = button.getAttribute('data-customer-name');
                     const productName = button.getAttribute('data-product-name');
                     const nextDue = button.getAttribute('data-next-due');
                     const rowElement = button.closest('tr');
+
+                    console.log('Button attributes:', {
+                        invoiceId,
+                        cpId,
+                        customerName,
+                        productName,
+                        nextDue
+                    });
 
                     // Store data for later use
                     confirmPaymentData = {
@@ -2096,6 +2163,8 @@
                         nextDue: nextDue,
                         rowElement: rowElement
                     };
+
+                    console.log('confirmPaymentData set to:', confirmPaymentData);
 
                     // Update modal content
                     const confirmCustomerName = document.getElementById('confirm_customer_name');

@@ -220,10 +220,10 @@ class PayController extends Controller
             
             if ($execution['success']) {
                 // Update payment and invoice status
-                $success = $this->updatePaymentStatus($paymentID, 'completed', $execution['transaction_id']);
+                $result = $this->updatePaymentStatus($paymentID, 'completed', $execution['transaction_id']);
                 
-                if ($success) {
-                    return redirect()->route('customer.products.browse')
+                if ($result['success']) {
+                    return redirect()->route('customer.invoices.show', $result['invoice_id'])
                         ->with('success', '🎉 Payment successful! Your subscription is now active.');
                 }
             } else {
@@ -245,10 +245,12 @@ class PayController extends Controller
         $status = $request->get('status');
         
         if ($status === 'VALID') {
-            $this->updatePaymentStatus($tranId, 'completed', $request->get('bank_tran_id'));
+            $result = $this->updatePaymentStatus($tranId, 'completed', $request->get('bank_tran_id'));
             
-            return redirect()->route('customer.products.index')
-                ->with('success', '🎉 Payment successful! Your subscription is now active.');
+            if ($result['success']) {
+                return redirect()->route('customer.invoices.show', $result['invoice_id'])
+                    ->with('success', '🎉 Payment successful! Your subscription is now active.');
+            }
         }
         
         return redirect()->route('customer.products.browse')
@@ -307,9 +309,9 @@ class PayController extends Controller
                 'is_active' => true
             ]);
             
-            return true;
+            return ['success' => true, 'invoice_id' => $invoice->invoice_id];
         }
         
-        return false;
+        return ['success' => false];
     }
 }

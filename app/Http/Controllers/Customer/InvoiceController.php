@@ -111,6 +111,33 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Get invoice details as JSON for AJAX requests.
+     */
+    public function getInvoiceJson($id)
+    {
+        $customer = Customer::where('user_id', Auth::id())->firstOrFail();
+        
+        $invoice = Invoice::where('invoice_id', $id)
+            ->whereHas('customerProduct', function($query) use ($customer) {
+                $query->where('c_id', $customer->c_id);
+            })
+            ->with([
+                'customerProduct.product',
+                'customerProduct.customer'
+            ])
+            ->first();
+        
+        if (!$invoice) {
+            return response()->json(['success' => false, 'message' => 'Invoice not found'], 404);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'invoice' => $invoice
+        ]);
+    }
+
+    /**
      * Download invoice as PDF.
      */
     public function download($id)

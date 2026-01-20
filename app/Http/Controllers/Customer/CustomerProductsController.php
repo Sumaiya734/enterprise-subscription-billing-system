@@ -231,6 +231,11 @@ class CustomerProductsController extends Controller
                         'status' => 'active',
                         'is_active' => true
                     ]);
+
+                    return redirect()->route('customer.products.purchase', ['productId' => $request->product_id])
+                        ->with('success', '🎉 Payment successful! Your subscription is now active.')
+                        ->with('payment_success', true)
+                        ->with('invoice_id', $invoice->invoice_id);
                 }
 
                 DB::commit();

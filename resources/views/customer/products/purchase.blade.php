@@ -385,6 +385,63 @@
         </div>
     </div>
 
+    <!-- Invoice Success Modal -->
+    <div class="modal fade" id="invoiceSuccessModal" tabindex="-1" aria-labelledby="invoiceSuccessModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="invoiceSuccessModalLabel">
+                        <i class="fas fa-check-circle me-2"></i>Payment Successful!
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Success Message -->
+                    <div class="alert alert-success d-flex align-items-center mb-4">
+                        <i class="fas fa-check-circle me-3 fs-4"></i>
+                        <div>
+                            <strong>Thank you for your payment!</strong><br>
+                            Your subscription has been activated successfully.
+                        </div>
+                    </div>
+
+                    <!-- Invoice Details -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-file-invoice me-2"></i>Invoice Details
+                            </h6>
+                        </div>
+                        <div class="card-body" id="invoiceDetails">
+                            <!-- Invoice content will be dynamically loaded here -->
+                            <div class="text-center py-3">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading invoice details...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between gap-2">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Close
+                        </button>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary" id="viewInvoiceBtn">
+                                <i class="fas fa-eye me-2"></i>View Full Invoice
+                            </button>
+                            <button type="button" class="btn btn-success" id="downloadPdfBtn">
+                                <i class="fas fa-download me-2"></i>Download PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <style>
         .subscription-checkout-page {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -517,6 +574,114 @@
             const discountDisplay = document.getElementById('discount_display');
             const billingNote = document.getElementById('billing_note');
             const monthlyPrice = {{ $product->monthly_price }};
+
+            // Check for payment success in session data
+            @php
+                $paymentSuccess = session('payment_success');
+                $invoiceId = session('invoice_id');
+            @endphp
+            
+            @if($paymentSuccess && $invoiceId)
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        showInvoiceSuccessModal('{{ $invoiceId }}');
+                    });
+                </script>
+            @endif
+
+            // Check for payment success in URL parameters (fallback)
+            const urlParams = new URLSearchParams(window.location.search);
+            const paymentSuccess = urlParams.get('payment_success');
+            const invoiceId = urlParams.get('invoice_id');
+
+            if (paymentSuccess === 'true' && invoiceId) {
+                showInvoiceSuccessModal(invoiceId);
+            }
+
+            function showInvoiceSuccessModal(invoiceId) {
+                const modal = new bootstrap.Modal(document.getElementById('invoiceSuccessModal'));
+                
+                // Load invoice details
+                loadInvoiceDetails(invoiceId);
+                
+                // Show modal
+                modal.show();
+
+                // Set up button handlers
+                document.getElementById('viewInvoiceBtn').onclick = function() {
+                    window.open(`/customer/invoices/${invoiceId}`, '_blank');
+                };
+
+                document.getElementById('downloadPdfBtn').onclick = function() {
+                    window.location.href = `/customer/invoices/${invoiceId}/download`;
+                };
+            }
+
+            function loadInvoiceDetails(invoiceId) {
+                const invoiceDetailsDiv = document.getElementById('invoiceDetails');
+                
+                fetch(`/customer/invoices/${invoiceId}/json`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            invoiceDetailsDiv.innerHTML = generateInvoiceHTML(data.invoice);
+                        } else {
+                            invoiceDetailsDiv.innerHTML = `
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Failed to load invoice details. Please try again later.
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading invoice:', error);
+                        invoiceDetailsDiv.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Failed to load invoice details. Please try again later.
+                            </div>
+                        `;
+                    });
+            }
+
+            function generateInvoiceHTML(invoice) {
+                return `
+                    <div class="invoice-preview">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Invoice Number</h6>
+                                <p class="fw-bold mb-3">#${invoice.invoice_number}</p>
+                                
+                                <h6 class="text-muted">Issue Date</h6>
+                                <p class="mb-3">${new Date(invoice.issue_date).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                            </div>
+                            <div class="col-md-6 text-md-end">
+                                <h6 class="text-muted">Status</h6>
+                                <p class="mb-3">
+                                    <span class="badge bg-${invoice.status === 'paid' ? 'success' : (invoice.status === 'pending' ? 'warning' : 'danger')}">
+                                        ${invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                                    </span>
+                                </p>
+                                
+                                <h6 class="text-muted">Total Amount</h6>
+                                <p class="fw-bold text-primary fs-5 mb-0">৳${number_format(invoice.total_amount, 2)}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="border-top pt-3">
+                            <h6 class="text-muted mb-3">Product Details</h6>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${invoice.customerProduct?.product?.name || 'Product'}</strong>
+                                    ${invoice.customerProduct?.billing_cycle_months ? `<br><small class="text-muted">(${invoice.customerProduct.billing_cycle_months} Month Subscription)</small>` : ''}
+                                </div>
+                                <strong class="text-primary">৳${number_format(invoice.subtotal, 2)}</strong>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
 
             function updatePricing() {
                 const selectedCycle = document.querySelector('input[name="billing_cycle"]:checked');
