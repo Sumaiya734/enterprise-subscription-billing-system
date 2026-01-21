@@ -762,17 +762,54 @@
 
         async function openEditModal(productId, productName) {
             // Show the modal
-            const modal = new bootstrap.Modal(document.getElementById('editProductModal'));
+            const modalElement = document.getElementById('editProductModal');
+            const modal = new bootstrap.Modal(modalElement);
+            
+            // Define variables in outer scope
+            let loadingEl, fieldsEl, errorsEl;
+            
+            // Wait for modal to be fully shown before accessing elements
+            modalElement.addEventListener('shown.bs.modal', function() {
+                initializeModalElements();
+            }, {once: true});
+            
             modal.show();
             
-            // Reset modal state
-            const loadingEl = document.getElementById('editLoading');
-            const fieldsEl = document.getElementById('editFields');
-            const errorsEl = document.getElementById('editErrors');
+            // Fallback: also try to initialize immediately in case shown event doesn't fire
+            setTimeout(initializeModalElements, 100);
             
-            loadingEl.style.display = '';
-            fieldsEl.style.display = 'none';
-            errorsEl.classList.add('d-none');
+            function initializeModalElements() {
+                console.log('Initializing modal elements...');
+                
+                // Reset modal state
+                loadingEl = document.getElementById('editLoading');
+                fieldsEl = document.getElementById('editFields');
+                errorsEl = document.getElementById('editErrors');
+                
+                console.log('Elements found:', { loadingEl, fieldsEl, errorsEl });
+                
+                // Check if elements exist before accessing them
+                if (loadingEl) {
+                    loadingEl.style.display = '';
+                    console.log('Loading element initialized');
+                } else {
+                    console.error('editLoading element not found!');
+                }
+                
+                if (fieldsEl) {
+                    fieldsEl.style.display = 'none';
+                    console.log('Fields element initialized');
+                } else {
+                    console.error('editFields element not found!');
+                }
+                
+                if (errorsEl) {
+                    errorsEl.classList.add('d-none');
+                    console.log('Errors element initialized');
+                } else {
+                    console.error('editErrors element not found!');
+                }
+            }
             
             try {
                 const url = `{{ url('admin/products') }}/${productId}/edit`;
@@ -810,19 +847,21 @@
                     `<i class="fas fa-edit me-2"></i>Edit Product: ${product.name}`;
                 
                 // Show form fields
-                loadingEl.style.display = 'none';
-                fieldsEl.style.display = '';
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (fieldsEl) fieldsEl.style.display = '';
                 
             } catch (error) {
                 console.error('Error loading product:', error);
                 
-                loadingEl.innerHTML = `
-                    <div class="alert alert-danger">
-                        <h6><i class="fas fa-exclamation-circle me-2"></i>Failed to load product details</h6>
-                        <p class="mb-2">${error.message}</p>
-                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-                    </div>
-                `;
+                if (loadingEl) {
+                    loadingEl.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h6><i class="fas fa-exclamation-circle me-2"></i>Failed to load product details</h6>
+                            <p class="mb-2">${error.message}</p>
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    `;
+                }
                 
                 showToast('Failed to load product details', 'danger');
             }

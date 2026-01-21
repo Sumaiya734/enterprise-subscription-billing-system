@@ -1,11 +1,14 @@
 <!-- resources/views/admin/admin-sidebar.blade.php -->
 
 <!-- Sidebar fragment (included into layout's column) -->
-    <div class="sidebar-brand">
-        <h5 class="text-white mb-0"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h5>
-    </div>
-    
-    <nav class="nav flex-column">
+    <div class="d-flex flex-column h-100">
+        <div class="sidebar-brand">
+            <h5 class="text-white mb-0"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h5>
+        </div>
+        
+        <!-- Scrollable Nav Section -->
+        <div class="flex-grow-1 overflow-y-auto">
+            <nav class="nav flex-column">
         <!-- Dashboard -->
         <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
             <i class="fas fa-home me-2"></i>Dashboard
@@ -122,7 +125,21 @@
                
             </div>
         </div>
-    </nav>
+            </nav>
+        </div>
+        
+        <!-- Sticky Footer -->
+        <div class="sidebar-footer py-3 px-3 border-top border-dark">
+            <div class="text-center text-light small">
+                <div class="mb-1">
+                    <i class="fas fa-copyright me-1"></i>{{ date('Y') }} Nanosoft
+                </div>
+                <div class="text-opacity-75">
+                    v{{ config('app.version', '1.0.0') }}
+                </div>
+            </div>
+        </div>
+    </div>
 
 <style>
  
@@ -145,7 +162,6 @@
         left: 0;
         bottom: 0;
         z-index: 1000;
-        overflow-y: auto;
         /* Add scrollbar styling */
         scrollbar-width: thin;
         scrollbar-color: #3498db #2c3e50;
@@ -169,6 +185,16 @@
         margin-left: 250px !important;
         margin-top: 56px !important;
     }
+}
+
+/* Sidebar flex layout for sticky footer */
+.sidebar > .d-flex {
+    height: calc(100vh - 56px);
+}
+
+.sidebar-footer {
+    background: rgba(0, 0, 0, 0.15);
+    flex-shrink: 0;
 }
 
 .submenu {
@@ -261,6 +287,13 @@
 .sidebar .dropdown-item.active {
     background-color: rgba(52, 152, 219, 0.3) !important;
     color: #fff !important;
+}
+
+/* Mobile sidebar flex layout */
+@media (max-width: 767.98px) {
+    .sidebar > .d-flex {
+        height: 100%;
+    }
 }
 </style>
 <script>

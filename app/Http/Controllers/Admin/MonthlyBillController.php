@@ -1159,7 +1159,13 @@ class MonthlyBillController extends Controller
         $request->validate([
             'invoice_id' => 'required|exists:invoices,invoice_id',
             'cp_id' => 'required|exists:customer_to_products,cp_id',
-            'next_due' => 'required|numeric|min:0'
+            'next_due' => 'required|numeric|min:0',
+            'subtotal' => 'nullable|numeric|min:0',
+            'previous_due' => 'nullable|numeric|min:0',
+            'total_amount' => 'nullable|numeric|min:0',
+            'received_amount' => 'nullable|numeric|min:0',
+            'status' => 'nullable|string',
+            'invoice_number' => 'nullable|string'
         ]);
 
         try {
@@ -1236,34 +1242,19 @@ class MonthlyBillController extends Controller
                         // Use original logic: Create next month if missing.
                         
                         if ($iterDate->format('Y-m') === $nextMonth->format('Y-m')) {
-                            $product = DB::table('products')->where('p_id', $customerProduct->p_id)->first();
-
-                            // Check collision with billing month logic
-                            $monthsFromAssign = $assignDate->diffInMonths($iterDate);
-                            $isBillingMonth = ($monthsFromAssign % $billingCycle) === 0;
-
-                            $newSubtotal = 0;
-                            if ($isBillingMonth) {
-                                if (($customerProduct->custom_price ?? 0) > 0) {
-                                    $newSubtotal = $customerProduct->custom_price;
-                                } else {
-                                    $newSubtotal = ($product->monthly_price ?? 0) * $billingCycle;
-                                }
-                            }
-
-                            $newTotalAmount = $newSubtotal + $dueAmount;
-
+                            // Create new invoice using the actual payment row data from frontend
+                            // This preserves the complete payment information (paid, partial, or unpaid status)
                             Invoice::create([
                                 'cp_id' => $request->cp_id,
-                                'invoice_number' => $this->generateMonthlyInvoiceNumber($iterDate->format('Y-m'), $invoice->customerProduct->c_id),
+                                'invoice_number' => $request->invoice_number ?: $this->generateMonthlyInvoiceNumber($iterDate->format('Y-m'), $invoice->customerProduct->c_id),
                                 'issue_date' => $iterDate->format('Y-m-d'),
-                                'previous_due' => $dueAmount,
-                                'subtotal' => $newSubtotal,
-                                'total_amount' => $newTotalAmount,
-                                'received_amount' => 0,
-                                'next_due' => $newTotalAmount,
-                                'status' => 'unpaid',
-                                'notes' => "Carried forward amount of ৳" . number_format($dueAmount, 0) . " from invoice {$invoice->invoice_number}",
+                                'previous_due' => $request->previous_due ?? 0,
+                                'subtotal' => $request->subtotal ?? 0,
+                                'total_amount' => $request->total_amount ?? $dueAmount,
+                                'received_amount' => $request->received_amount ?? 0,
+                                'next_due' => $request->next_due ?? $dueAmount,
+                                'status' => $request->status ?? 'unpaid',
+                                'notes' => "Payment row carried forward from invoice {$invoice->invoice_number} - Original status: " . ($request->status ?? 'unpaid') . " - Due: ৳" . number_format($dueAmount, 0),
                                 'created_by' => \Illuminate\Support\Facades\Auth::id()
                             ]);
                         }

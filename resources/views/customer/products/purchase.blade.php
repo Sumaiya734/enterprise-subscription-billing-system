@@ -105,6 +105,7 @@
                                                     <div class="text-center">
                                                         <strong>Quarterly</strong>
                                                         <div class="small text-muted">3 Months</div>
+                                                        <div class="text-decoration-line-through text-muted small">৳{{ number_format($product->monthly_price * 3, 0) }}</div>
                                                         <div class="fw-bold text-primary">৳{{ number_format($product->monthly_price * 3 * $discountRates[3], 0) }}</div>
                                                         <div class="badge bg-success small">Save 5%</div>
                                                     </div>
@@ -118,6 +119,7 @@
                                                     <div class="text-center">
                                                         <strong>Half-Yearly</strong>
                                                         <div class="small text-muted">6 Months</div>
+                                                        <div class="text-decoration-line-through text-muted small">৳{{ number_format($product->monthly_price * 6, 0) }}</div>
                                                         <div class="fw-bold text-primary">৳{{ number_format($product->monthly_price * 6 * $discountRates[6], 0) }}</div>
                                                         <div class="badge bg-success small">Save 10%</div>
                                                     </div>
@@ -131,6 +133,7 @@
                                                     <div class="text-center">
                                                         <strong>Yearly</strong>
                                                         <div class="small text-muted">12 Months</div>
+                                                        <div class="text-decoration-line-through text-muted small">৳{{ number_format($product->monthly_price * 12, 0) }}</div>
                                                         <div class="fw-bold text-primary">৳{{ number_format($product->monthly_price * 12 * $discountRates[12], 0) }}</div>
                                                         <div class="badge bg-success small">Save 15%</div>
                                                     </div>

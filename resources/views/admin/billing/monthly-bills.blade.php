@@ -576,13 +576,17 @@
                                             <i class="fas fa-eye"></i> View
                                         </button>
                                         <button class="btn btn-warning btn-sm confirm-user-btn"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#confirmUserPaymentModal"
                                             data-invoice-id="{{ $invoice->invoice_id }}"
                                             data-cp-id="{{ $customerProduct->cp_id }}"
                                             data-customer-name="{{ e($customer->name ?? 'Customer') }}"
                                             data-product-name="{{ e($product->name ?? 'Unknown Product') }}"
                                             data-next-due="{{ number_format($nextDue, 2, '.', '') }}"
+                                            data-subtotal="{{ $invoice->subtotal ?? 0 }}"
+                                            data-previous-due="{{ $invoice->previous_due ?? 0 }}"
+                                            data-total-amount="{{ $invoice->total_amount ?? 0 }}"
+                                            data-received-amount="{{ $invoice->received_amount ?? 0 }}"
+                                            data-status="{{ $invoice->status }}"
+                                            data-invoice-number="{{ $invoice->invoice_number }}"
                                             title="Confirm and close user's month">
                                             <i class="fas fa-check"></i> Confirm
                                         </button>
@@ -610,13 +614,17 @@
                                         </button>
                                         {{-- Allow confirm even with 0 payment (carry forward all) --}}
                                         <button class="btn btn-warning btn-sm confirm-user-btn mt-1"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#confirmUserPaymentModal"
                                             data-invoice-id="{{ $invoice->invoice_id }}"
                                             data-cp-id="{{ $customerProduct->cp_id }}"
                                             data-customer-name="{{ e($customer->name ?? 'Customer') }}"
                                             data-product-name="{{ e($product->name ?? 'Unknown Product') }}"
                                             data-next-due="{{ number_format($nextDue, 2, '.', '') }}"
+                                            data-subtotal="{{ $invoice->subtotal ?? 0 }}"
+                                            data-previous-due="{{ $invoice->previous_due ?? 0 }}"
+                                            data-total-amount="{{ $invoice->total_amount ?? 0 }}"
+                                            data-received-amount="{{ $invoice->received_amount ?? 0 }}"
+                                            data-status="{{ $invoice->status }}"
+                                            data-invoice-number="{{ $invoice->invoice_number }}"
                                             title="Confirm and close user's month">
                                             <i class="fas fa-check"></i> Confirm
                                         </button>
@@ -1798,7 +1806,13 @@
             cpId,
             customerName,
             productName,
-            nextDue
+            nextDue,
+            subtotal,
+            previousDue,
+            totalAmount,
+            receivedAmount,
+            status,
+            invoiceNumber
         } = confirmPaymentData;
 
         console.log('Destructured data:', {
@@ -1806,7 +1820,13 @@
             cpId,
             customerName,
             productName,
-            nextDue
+            nextDue,
+            subtotal,
+            previousDue,
+            totalAmount,
+            receivedAmount,
+            status,
+            invoiceNumber
         });
 
         if (!invoiceId || !cpId) {
@@ -1829,6 +1849,13 @@
         const originalBtnHtml = confirmBtn.innerHTML;
         confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing...';
         confirmBtn.disabled = true;
+        
+        // Also disable the confirm button in the table
+        const confirmButtons = document.querySelectorAll(`.confirm-user-btn[data-invoice-id="${invoiceId}"][data-cp-id="${cpId}"]`);
+        confirmButtons.forEach(button => {
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-check"></i> Processing...';
+        });
 
         console.log('Sending AJAX request to:', '{{ route("admin.billing.confirm-user-payment") }}');
 
@@ -1836,7 +1863,13 @@
         console.log('Sending AJAX request with data:', {
             invoice_id: invoiceId,
             cp_id: cpId,
-            next_due: parseFloat(nextDue)
+            next_due: parseFloat(nextDue),
+            subtotal: parseFloat(subtotal),
+            previous_due: parseFloat(previousDue),
+            total_amount: parseFloat(totalAmount),
+            received_amount: parseFloat(receivedAmount),
+            status: status,
+            invoice_number: invoiceNumber
         });
 
         fetch('{{ route("admin.billing.confirm-user-payment") }}', {
@@ -1848,7 +1881,13 @@
                 body: JSON.stringify({
                     invoice_id: invoiceId,
                     cp_id: cpId,
-                    next_due: parseFloat(nextDue)
+                    next_due: parseFloat(nextDue),
+                    subtotal: parseFloat(subtotal),
+                    previous_due: parseFloat(previousDue),
+                    total_amount: parseFloat(totalAmount),
+                    received_amount: parseFloat(receivedAmount),
+                    status: status,
+                    invoice_number: invoiceNumber
                 })
             })
             .then(response => {
@@ -1944,7 +1983,7 @@
             // Force a small delay to ensure DOM is ready
             setTimeout(() => {
                 // Find all confirm buttons for this invoice and update them
-                const confirmButtons = document.querySelectorAll(`.confirm-user-btn[data-invoice-id="${invoiceId}"]`);
+                const confirmButtons = document.querySelectorAll(`.confirm-user-btn[data-invoice-id="${invoiceId}"][data-cp-id="${cpId}"]`);
                 console.log('Found confirm buttons to update:', confirmButtons.length);
 
                 confirmButtons.forEach((button, index) => {
@@ -1978,7 +2017,7 @@
                 });
 
                 // Also update any payment buttons to show the confirmed status
-                const paymentButtons = document.querySelectorAll(`.payment-btn[data-invoice-id="${invoiceId}"]`);
+                const paymentButtons = document.querySelectorAll(`.payment-btn[data-invoice-id="${invoiceId}"][data-cp-id="${cpId}"]`);
                 console.log('Found payment buttons to update:', paymentButtons.length);
                 paymentButtons.forEach((button, index) => {
                     console.log('Updating payment button', index, button);
@@ -2102,6 +2141,12 @@
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM Content Loaded - Setting up event listeners');
         
+        // Ensure Bootstrap is available before setting up modals
+        if (typeof bootstrap === 'undefined' || typeof bootstrap.Modal === 'undefined') {
+            console.error('Bootstrap Modal is not available');
+            return;
+        }
+        
         // Test: Add click listeners to all confirm buttons
         const confirmButtons = document.querySelectorAll('.confirm-user-btn');
         console.log('Found confirm buttons:', confirmButtons.length);
@@ -2109,6 +2154,10 @@
         confirmButtons.forEach((button, index) => {
             console.log(`Button ${index}:`, button);
             button.addEventListener('click', function(e) {
+                // Prevent default Bootstrap modal triggering to avoid conflicts
+                e.preventDefault();
+                e.stopPropagation();
+                
                 console.log('Confirm button clicked!', this);
                 console.log('Button data attributes:', {
                     invoiceId: this.getAttribute('data-invoice-id'),
@@ -2117,11 +2166,81 @@
                     productName: this.getAttribute('data-product-name'),
                     nextDue: this.getAttribute('data-next-due')
                 });
+                
+                // Manually show the modal after preventing default behavior
+                const confirmUserPaymentModalEl = document.getElementById('confirmUserPaymentModal');
+                if (confirmUserPaymentModalEl && typeof bootstrap !== 'undefined' && typeof bootstrap.Modal !== 'undefined') {
+                    try {
+                        let modal = bootstrap.Modal.getInstance(confirmUserPaymentModalEl);
+                        if (!modal) {
+                            modal = new bootstrap.Modal(confirmUserPaymentModalEl);
+                        }
+                        
+                        // Manually populate modal data before showing
+                        const invoiceId = this.getAttribute('data-invoice-id');
+                        const cpId = this.getAttribute('data-cp-id');
+                        const customerName = this.getAttribute('data-customer-name');
+                        const productName = this.getAttribute('data-product-name');
+                        const nextDue = this.getAttribute('data-next-due');
+                        const subtotal = this.getAttribute('data-subtotal');
+                        const previousDue = this.getAttribute('data-previous-due');
+                        const totalAmount = this.getAttribute('data-total-amount');
+                        const receivedAmount = this.getAttribute('data-received-amount');
+                        const status = this.getAttribute('data-status');
+                        const invoiceNumber = this.getAttribute('data-invoice-number');
+                        const rowElement = this.closest('tr');
+                        
+                        // Store data for later use
+                        confirmPaymentData = {
+                            invoiceId: invoiceId,
+                            cpId: cpId,
+                            customerName: customerName,
+                            productName: productName,
+                            nextDue: nextDue,
+                            subtotal: subtotal,
+                            previousDue: previousDue,
+                            totalAmount: totalAmount,
+                            receivedAmount: receivedAmount,
+                            status: status,
+                            invoiceNumber: invoiceNumber,
+                            rowElement: rowElement
+                        };
+                        
+                        console.log('confirmPaymentData set to:', confirmPaymentData);
+                        
+                        // Update modal content immediately
+                        const confirmCustomerName = document.getElementById('confirm_customer_name');
+                        const confirmProductName = document.getElementById('confirm_product_name');
+                        const confirmNextDue = document.getElementById('confirm_next_due');
+                        
+                        if (confirmCustomerName) confirmCustomerName.textContent = customerName;
+                        if (confirmProductName) confirmProductName.textContent = productName;
+                        if (confirmNextDue) confirmNextDue.textContent = `৳ ${(parseFloat(nextDue) || 0).toLocaleString('en-BD', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                        
+                        // Show the modal
+                        modal.show();
+                    } catch (error) {
+                        console.error('Error showing modal:', error);
+                    }
+                }
             });
         });
         
-        const confirmUserPaymentModal = document.getElementById('confirmUserPaymentModal');
-        if (confirmUserPaymentModal) {
+        // Properly initialize the confirm user payment modal
+        const confirmUserPaymentModalEl = document.getElementById('confirmUserPaymentModal');
+        if (confirmUserPaymentModalEl) {
+            // Initialize modal instance to avoid conflicts
+            let confirmUserPaymentModal;
+            try {
+                confirmUserPaymentModal = bootstrap.Modal.getInstance(confirmUserPaymentModalEl);
+                if (!confirmUserPaymentModal) {
+                    confirmUserPaymentModal = new bootstrap.Modal(confirmUserPaymentModalEl);
+                }
+            } catch (initError) {
+                console.warn('Could not initialize modal, creating new instance:', initError.message);
+                confirmUserPaymentModal = new bootstrap.Modal(confirmUserPaymentModalEl);
+            }
+            
             // Add event listener for the confirm button
             const confirmBtn = document.getElementById('confirmUserPaymentBtn');
             if (confirmBtn) {
@@ -2132,7 +2251,8 @@
                 });
             }
             
-            confirmUserPaymentModal.addEventListener('show.bs.modal', function(event) {
+            // Use the correct Bootstrap event names
+            confirmUserPaymentModalEl.addEventListener('show.bs.modal', function(event) {
                 console.log('Modal show event triggered');
                 const button = event.relatedTarget;
                 console.log('Related target button:', button);
@@ -2144,6 +2264,12 @@
                     const customerName = button.getAttribute('data-customer-name');
                     const productName = button.getAttribute('data-product-name');
                     const nextDue = button.getAttribute('data-next-due');
+                    const subtotal = button.getAttribute('data-subtotal');
+                    const previousDue = button.getAttribute('data-previous-due');
+                    const totalAmount = button.getAttribute('data-total-amount');
+                    const receivedAmount = button.getAttribute('data-received-amount');
+                    const status = button.getAttribute('data-status');
+                    const invoiceNumber = button.getAttribute('data-invoice-number');
                     const rowElement = button.closest('tr');
 
                     console.log('Button attributes:', {
@@ -2161,6 +2287,12 @@
                         customerName: customerName,
                         productName: productName,
                         nextDue: nextDue,
+                        subtotal: subtotal,
+                        previousDue: previousDue,
+                        totalAmount: totalAmount,
+                        receivedAmount: receivedAmount,
+                        status: status,
+                        invoiceNumber: invoiceNumber,
                         rowElement: rowElement
                     };
 
@@ -2178,7 +2310,7 @@
             });
 
             // Reset modal on close
-            confirmUserPaymentModal.addEventListener('hidden.bs.modal', function() {
+            confirmUserPaymentModalEl.addEventListener('hidden.bs.modal', function() {
                 const confirmBtn = document.getElementById('confirmUserPaymentBtn');
                 if (confirmBtn) {
                     confirmBtn.innerHTML = '<i class="fas fa-check me-1"></i>Confirm & Carry Forward';
@@ -2732,66 +2864,61 @@
     });
 
 
-    // Function to update UI after confirmation WITHOUT page refresh---2
-    function updateUIAfterConfirmation(invoiceId, cpId, customerName, nextDue) {
-        console.log('Updating UI for invoice:', invoiceId, 'with due:', nextDue);
 
-        try {
-            // Find the row corresponding to this invoice
-            const $row = $(`tr[data-invoice-id="${invoiceId}"]`);
 
-            if ($row.length) {
-                // Update the status cell to show confirmed
-                const statusCell = $row.find('td').eq(8); // Status is 9th column
-                statusCell.html('<span class="badge bg-info"><i class="fas fa-check-double me-1"></i>Confirmed</span>');
 
-                // Update next due cell
-                const nextDueCell = $row.find('.next-due');
-                if (nextDueCell.length) {
-                    const safeNextDue = parseFloat(nextDue) || 0;
-                    const formattedAmount = safeNextDue.toLocaleString('en-BD', {
-                        minimumFractionDigits: 2
-                    });
-                    nextDueCell.html(`
-                    <strong class="text-warning">৳ ${formattedAmount}</strong>
-                    <br><small class="text-warning"><i class="fas fa-forward me-1"></i>Carried Forward</small>
-                `);
-                }
-
-                // Update action buttons
-                const actionCell = $row.find('td').eq(9); // Action is 10th column
-                actionCell.html(`
-                <div class="d-flex flex-column gap-1">
-                    <button class="btn btn-outline-info btn-sm view-invoice-btn" 
-                            data-invoice-id="${invoiceId}" 
-                            data-bs-toggle="modal" 
-                            data-bs-target="#viewInvoiceModal" 
-                            title="View Invoice">
-                        <i class="fas fa-eye"></i> View
-                    </button>
-                    <button class="btn btn-secondary btn-sm" disabled 
-                            title="User payment confirmed - Due carried forward">
-                        <i class="fas fa-check-circle"></i> Confirmed
-                    </button>
-                </div>
-            `);
-
-                // Add CSS class for confirmed row
-                $row.addClass('table-info');
-
-                // Re-attach event listener for view button
-                $row.find('.view-invoice-btn').on('click', function() {
-                    const invoiceId = $(this).data('invoice-id');
-                    viewInvoice(invoiceId);
+    // Note: loadExistingPayments and payment edit/delete are now handled by the inline JavaScript in payment-modal.blade.php
+    
+    // Error handling for script loading issues
+    window.addEventListener('error', function(e) {
+        // Check if it's the specific error about backdrop
+        if (e.error && e.error.message && e.error.message.includes('backdrop')) {
+            console.warn('Bootstrap modal backdrop error detected, attempting recovery...');
+            // Attempt to reinitialize bootstrap if needed
+            if (typeof bootstrap !== 'undefined' && typeof bootstrap.Modal !== 'undefined') {
+                // Get all modal elements and reattach event handlers if needed
+                document.querySelectorAll('.modal').forEach(modalEl => {
+                    try {
+                        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                        if (!modalInstance) {
+                            // Create new instance if none exists
+                            new bootstrap.Modal(modalEl);
+                        }
+                    } catch (initError) {
+                        console.warn('Could not reinitialize modal:', initError.message);
+                    }
                 });
-
-                console.log('UI updated for invoice:', invoiceId);
             }
-        } catch (error) {
-            console.error('Error updating UI:', error);
         }
-    }
+        console.error('JavaScript Error:', e.error);
+        // Don't prevent the default error handling
+        return false;
+    }, true);
+</script>
 
-
-    // Note: loadExistingPayments and payment edit/delete are now handled by the inline JavaScript in payment-modal.blade.php</script>
+<script>
+    // Ensure all scripts are loaded in correct order
+    document.addEventListener('DOMContentLoaded', function() {
+        // Final check to ensure jQuery and Bootstrap are loaded
+        if (typeof $ === 'undefined') {
+            console.error('CRITICAL: jQuery is still not loaded after all attempts!');
+        }
+        if (typeof bootstrap === 'undefined' || typeof bootstrap.Modal === 'undefined') {
+            console.error('CRITICAL: Bootstrap is still not loaded after all attempts!');
+        }
+        
+        // Ensure confirmUserPaymentModal is properly initialized
+        const confirmUserPaymentModalEl = document.getElementById('confirmUserPaymentModal');
+        if (confirmUserPaymentModalEl && typeof bootstrap !== 'undefined' && typeof bootstrap.Modal !== 'undefined') {
+            try {
+                let existingModal = bootstrap.Modal.getInstance(confirmUserPaymentModalEl);
+                if (!existingModal) {
+                    new bootstrap.Modal(confirmUserPaymentModalEl);
+                }
+            } catch (e) {
+                console.warn('Modal already initialized or error occurred:', e.message);
+            }
+        }
+    });
+</script>
 @endsection

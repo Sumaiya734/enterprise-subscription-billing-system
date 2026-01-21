@@ -176,6 +176,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/types', [ProductController::class, 'productTypes'])->name('types');
         Route::post('/add-type', [ProductController::class, 'addProductType'])->name('add-type');
+        Route::delete('/delete-type/{id}', [ProductController::class, 'deleteProductType'])->name('delete-type');
     });
     Route::resource('products', ProductController::class);
 
